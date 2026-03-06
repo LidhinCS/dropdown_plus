@@ -331,4 +331,4 @@ MultiSelectDropdownPlus(
 
 ## License
 
-MIT © Your Name
+MIT © LidhinCS
