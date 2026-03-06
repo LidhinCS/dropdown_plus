@@ -1,0 +1,26 @@
+name: dropdown_plus
+description: >-
+  A highly customizable Flutter dropdown package with BLoC/Cubit integration.
+  Supports single-select searchable dropdown and multi-select dropdown with
+  real-time search, offline caching, and full theme customization.
+version: 0.1.0
+homepage: https://github.com/yourusername/dropdown_plus
+repository: https://github.com/yourusername/dropdown_plus
+issue_tracker: https://github.com/yourusername/dropdown_plus/issues
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_bloc: ">=8.0.0 <10.0.0"
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ">=3.0.0"
+  bloc_test: ">=9.0.0"
+
+flutter:

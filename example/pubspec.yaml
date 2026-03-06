@@ -1,0 +1,23 @@
+name: dropdown_plus_example
+description: Example app demonstrating the dropdown_plus package.
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_bloc: ">=8.0.0 <10.0.0"
+  # No flutter_hooks needed — dropdown_plus uses plain StatefulWidget
+  dropdown_plus:
+    path: ../
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
