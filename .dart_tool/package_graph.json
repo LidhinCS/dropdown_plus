@@ -5,7 +5,7 @@
   "packages": [
     {
       "name": "dropdown_plus_bloc",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": [
         "flutter",
         "flutter_bloc"
