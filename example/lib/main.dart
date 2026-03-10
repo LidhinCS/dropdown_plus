@@ -6,7 +6,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:dropdown_plus/dropdown_plus.dart';
+import 'package:dropdown_plus_bloc/dropdown_plus_bloc.dart';
 
 // ── Data model ────────────────────────────────────────────────────────────────
 
@@ -99,8 +99,8 @@ class _ExamplePageState extends State<ExamplePage> {
         if (state is UsersLoaded) {
           updateList(
             state.users
-                .map((u) => DropdownItem(
-                    value: u, label: '${u.name} · ${u.role}'))
+                .map((u) =>
+                    DropdownItem(value: u, label: '${u.name} · ${u.role}'))
                 .toList(),
           );
           updateLoading(false);
@@ -169,8 +169,7 @@ class _ExamplePageState extends State<ExamplePage> {
                 loadingIndicatorColor: Colors.teal,
                 selectAllTextStyle: const TextStyle(
                     color: Colors.teal, fontWeight: FontWeight.bold),
-                selectedCountBackgroundColor:
-                    Colors.teal.withOpacity(0.15),
+                selectedCountBackgroundColor: Colors.teal.withOpacity(0.15),
                 selectedCountTextStyle: const TextStyle(
                     color: Colors.teal, fontWeight: FontWeight.w600),
               ),

@@ -1,10 +1,10 @@
 {
   "roots": [
-    "dropdown_plus"
+    "dropdown_plus_bloc"
   ],
   "packages": [
     {
-      "name": "dropdown_plus",
+      "name": "dropdown_plus_bloc",
       "version": "0.1.0",
       "dependencies": [
         "flutter",

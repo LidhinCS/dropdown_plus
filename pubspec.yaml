@@ -1,4 +1,4 @@
-name: dropdown_plus
+name: dropdown_plus_bloc
 description: >-
   A highly customizable Flutter dropdown package with BLoC/Cubit integration.
   Supports single-select searchable dropdown and multi-select dropdown with

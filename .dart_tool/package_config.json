@@ -410,7 +410,7 @@
       "languageVersion": "3.4"
     },
     {
-      "name": "dropdown_plus",
+      "name": "dropdown_plus_bloc",
       "rootUri": "../",
       "packageUri": "lib/",
       "languageVersion": "3.0"
