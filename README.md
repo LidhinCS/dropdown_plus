@@ -17,7 +17,7 @@ A highly customisable Flutter dropdown package with first-class **BLoC / Cubit**
 - 🔌 **BLoC / Cubit integration** — pass any `Cubit` or `Bloc` and let the widget react to state changes automatically
 - 🔍 **Real-time search** — calls your cubit's search method as the user types
 - 📴 **Offline caching** — falls back to client-side filtering when no internet is available
-- 🎨 **Full theme customisation** — every colour, size, border and text style is configurable via `DropdownPlusTheme`
+- 🎨 **Preset + custom theming** — use `themeStyle` for out-of-the-box looks or `DropdownPlusTheme` for full control
 - 🧩 **Custom builders** — override item rows, chip display, and the trigger button content
 - 🔄 **Controlled mode** — sync selected value(s) from external state (e.g. QR scan, form reset)
 - ✅ **Multi-select helpers** — "Select All" / "Clear All" header, "+N more" overflow chip
@@ -146,6 +146,52 @@ SearchableDropdownPlus(
 )
 ```
 
+### Preset Theme Styles (`themeStyle`)
+
+Use `themeStyle` when you want a ready-to-use UI without configuring every field:
+
+```dart
+SearchableDropdownPlus<WorkerCubit, WorkerState>(
+  cubit: context.read<WorkerCubit>(),
+  hintText: 'Search worker…',
+  themeStyle: DropdownPlusThemeStyle.compact,
+  onSearch: (query) => context.read<WorkerCubit>().search(query),
+  onStateChange: (state, updateList, updateLoading) {
+    // ...
+  },
+)
+```
+
+Available presets:
+
+| Enum Value | Style |
+|------------|-------|
+| `DropdownPlusThemeStyle.material` | Default Material-like appearance |
+| `DropdownPlusThemeStyle.minimal` | Light borders and subtle surfaces |
+| `DropdownPlusThemeStyle.rounded` | Larger radius and softer card-like look |
+| `DropdownPlusThemeStyle.outlined` | Strong border-focused style |
+| `DropdownPlusThemeStyle.dark` | Dark surfaces with light foregrounds |
+| `DropdownPlusThemeStyle.compact` | Dense spacing and smaller visuals |
+
+You can also start from a preset and override specific properties:
+
+```dart
+MultiSelectDropdownPlus<WorkerCubit, WorkerState>(
+  cubit: context.read<WorkerCubit>(),
+  hintText: 'Select workers…',
+  themeStyle: DropdownPlusThemeStyle.dark,
+  dropdownTheme: DropdownPlusThemePresets
+      .forStyle(DropdownPlusThemeStyle.dark)
+      .copyWith(borderRadius: 16),
+  onSearch: (query) => context.read<WorkerCubit>().search(query),
+  onStateChange: (state, updateList, updateLoading) {
+    // ...
+  },
+)
+```
+
+`dropdownTheme` takes precedence over `themeStyle` when both are provided.
+
 ### Dark Theme Example
 
 ```dart
@@ -244,6 +290,7 @@ dropdownTheme: DropdownPlusTheme(
 | `loadingText` | `String?` | — | Loading-state message |
 | `needInitialFetch` | `bool` | — | Trigger search on mount (default: `false`) |
 | `dropdownTheme` | `DropdownPlusTheme?` | — | Visual customisation |
+| `themeStyle` | `DropdownPlusThemeStyle?` | — | Preset style (ignored when `dropdownTheme` is set) |
 | `itemBuilder` | `Widget Function(item, isSelected)?` | — | Custom item row |
 | `selectedValueBuilder` | `Widget Function(item)?` | — | Custom trigger content |
 | `checkInternetConnection` | `Future<bool> Function()?` | — | Custom connectivity check |

@@ -129,6 +129,7 @@ class _ExamplePageState extends State<ExamplePage> {
               noResultsText: 'No users found',
               loadingText: 'Loading…',
               onSearch: _singleCubit.search,
+              themeStyle: DropdownPlusThemeStyle.compact,
               onStateChange: _stateHandler,
               onSelectionChanged: (item) =>
                   setState(() => _selected = item as DropdownItem<User>),

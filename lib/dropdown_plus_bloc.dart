@@ -50,5 +50,6 @@ library dropdown_plus;
 
 export 'src/models/dropdown_item.dart';
 export 'src/models/dropdown_plus_theme.dart';
+export 'src/models/dropdown_plus_theme_style.dart';
 export 'src/widgets/multi_select_dropdown_plus.dart';
 export 'src/widgets/searchable_dropdown_plus.dart';

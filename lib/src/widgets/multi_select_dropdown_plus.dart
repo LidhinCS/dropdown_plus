@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../models/dropdown_item.dart';
 import '../models/dropdown_plus_theme.dart';
+import '../models/dropdown_plus_theme_style.dart';
 
 /// A multi-select dropdown that integrates with any BLoC/Cubit.
 ///
@@ -17,7 +18,7 @@ import '../models/dropdown_plus_theme.dart';
 /// - Real-time search via [onSearch]
 /// - Offline caching with client-side fallback filtering
 /// - Controlled mode via [selectedItems]
-/// - Full visual customisation via [dropdownTheme]
+/// - Full visual customisation via [dropdownTheme] or preset [themeStyle]
 /// - Custom item & chip builders
 ///
 /// ## Basic Usage
@@ -56,6 +57,7 @@ class MultiSelectDropdownPlus<C extends StateStreamableSource<S>, S>
     this.needInitialFetch = false,
     this.maxDisplayChips = 2,
     this.dropdownTheme,
+    this.themeStyle,
     this.itemBuilder,
     this.selectedItemBuilder,
     this.buttonHeight,
@@ -100,8 +102,13 @@ class MultiSelectDropdownPlus<C extends StateStreamableSource<S>, S>
   /// Maximum chips shown before "+N more" overflow. Default: `2`.
   final int maxDisplayChips;
 
-  /// Visual customisation.
+  /// Visual customisation. When null, [themeStyle] is used if set.
   final DropdownPlusTheme? dropdownTheme;
+
+  /// Preset theme style. Ignored when [dropdownTheme] is non-null.
+  /// Use for out-of-the-box looks: [DropdownPlusThemeStyle.minimal],
+  /// [DropdownPlusThemeStyle.dark], etc.
+  final DropdownPlusThemeStyle? themeStyle;
 
   /// Override item row rendering.
   final Widget Function(DropdownItem<dynamic> item, bool isSelected)?
@@ -124,6 +131,12 @@ class MultiSelectDropdownPlus<C extends StateStreamableSource<S>, S>
   State<MultiSelectDropdownPlus<C, S>> createState() =>
       _MultiSelectDropdownPlusState<C, S>();
 }
+
+/// Conservative height for trigger + top gap so panel can stay within parent.
+const double _triggerAndGapEstimate = 70.0;
+
+/// Minimum panel height so the list area remains usable when space is tight.
+const double _minPanelHeight = 120.0;
 
 class _MultiSelectDropdownPlusState<C extends StateStreamableSource<S>, S>
     extends State<MultiSelectDropdownPlus<C, S>> {
@@ -211,7 +224,11 @@ class _MultiSelectDropdownPlusState<C extends StateStreamableSource<S>, S>
 
   @override
   Widget build(BuildContext context) {
-    final t = widget.dropdownTheme ?? const DropdownPlusTheme();
+    final t = widget.dropdownTheme ??
+        (widget.themeStyle != null
+            ? DropdownPlusThemePresets.forStyle(widget.themeStyle!)
+            : null) ??
+        const DropdownPlusTheme();
     final cs = Theme.of(context).colorScheme;
 
     final borderCol = t.borderColor ?? cs.outline.withOpacity(0.5);
@@ -227,13 +244,22 @@ class _MultiSelectDropdownPlusState<C extends StateStreamableSource<S>, S>
       child: BlocListener<C, S>(
         bloc: widget.cubit,
         listener: (_, state) => _onBlocState(state),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildTrigger(t, cs, borderCol, activeBorderCol, loadCol, arrowCol),
-            _buildPanel(t, cs, divCol, loadCol),
-          ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final panelMax = constraints.hasBoundedHeight
+                ? (constraints.maxHeight - _triggerAndGapEstimate)
+                    .clamp(_minPanelHeight, t.menuMaxHeight)
+                : t.menuMaxHeight;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildTrigger(
+                    t, cs, borderCol, activeBorderCol, loadCol, arrowCol),
+                _buildPanel(t, cs, divCol, loadCol, panelMax),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -335,6 +361,7 @@ class _MultiSelectDropdownPlusState<C extends StateStreamableSource<S>, S>
     ColorScheme cs,
     Color divCol,
     Color loadCol,
+    double panelMaxHeight,
   ) {
     return AnimatedSize(
       duration: const Duration(milliseconds: 200),
@@ -348,7 +375,7 @@ class _MultiSelectDropdownPlusState<C extends StateStreamableSource<S>, S>
                 borderRadius: BorderRadius.circular(t.menuBorderRadius),
                 color: t.menuBackgroundColor ?? Colors.white,
                 child: Container(
-                  constraints: BoxConstraints(maxHeight: t.menuMaxHeight),
+                  constraints: BoxConstraints(maxHeight: panelMaxHeight),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(t.menuBorderRadius),
                     border: Border.all(
@@ -356,7 +383,7 @@ class _MultiSelectDropdownPlusState<C extends StateStreamableSource<S>, S>
                     ),
                   ),
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisSize: MainAxisSize.max,
                     children: [
                       _buildSearchBar(t, cs),
                       Divider(height: 1, thickness: 1, color: divCol),

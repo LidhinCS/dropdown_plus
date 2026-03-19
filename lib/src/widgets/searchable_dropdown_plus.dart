@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../models/dropdown_item.dart';
 import '../models/dropdown_plus_theme.dart';
+import '../models/dropdown_plus_theme_style.dart';
 
 /// A single-select searchable dropdown that integrates with any BLoC/Cubit.
 ///
@@ -14,7 +15,7 @@ import '../models/dropdown_plus_theme.dart';
 /// - Real-time search via [onSearch]
 /// - Offline caching: falls back to client-side filtering when no internet
 /// - Controlled-mode support via [selectedValue] (useful for QR scan, form reset, etc.)
-/// - Full visual customisation via [dropdownTheme]
+/// - Full visual customisation via [dropdownTheme] or preset [themeStyle]
 /// - Custom item & selected-value builders
 ///
 /// ## Basic Usage
@@ -60,6 +61,7 @@ class SearchableDropdownPlus<C extends StateStreamableSource<S>, S>
     this.loadingText,
     this.needInitialFetch = false,
     this.dropdownTheme,
+    this.themeStyle,
     this.itemBuilder,
     this.selectedValueBuilder,
     this.checkInternetConnection,
@@ -112,8 +114,13 @@ class SearchableDropdownPlus<C extends StateStreamableSource<S>, S>
   /// If `true`, [onSearch] is called with an empty string on widget mount.
   final bool needInitialFetch;
 
-  /// Visual customisation. Falls back to [Theme] values when `null`.
+  /// Visual customisation. When null, [themeStyle] is used if set.
   final DropdownPlusTheme? dropdownTheme;
+
+  /// Preset theme style. Ignored when [dropdownTheme] is non-null.
+  /// Use for out-of-the-box looks: [DropdownPlusThemeStyle.minimal],
+  /// [DropdownPlusThemeStyle.dark], etc.
+  final DropdownPlusThemeStyle? themeStyle;
 
   /// Override the item row rendering.
   final Widget Function(DropdownItem<dynamic> item, bool isSelected)?
@@ -206,7 +213,11 @@ class _SearchableDropdownPlusState<C extends StateStreamableSource<S>, S>
 
   @override
   Widget build(BuildContext context) {
-    final t = widget.dropdownTheme ?? const DropdownPlusTheme();
+    final t = widget.dropdownTheme ??
+        (widget.themeStyle != null
+            ? DropdownPlusThemePresets.forStyle(widget.themeStyle!)
+            : null) ??
+        const DropdownPlusTheme();
     final cs = Theme.of(context).colorScheme;
 
     final borderCol = t.borderColor ?? cs.outline.withOpacity(0.5);
