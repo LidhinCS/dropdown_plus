@@ -1,0 +1,27 @@
+# Generated tool metadata
+.dart_tool/
+**/.dart_tool/
+
+# Flutter / Dart build outputs
+build/
+**/build/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# iOS / Android / desktop generated intermediates
+**/Pods/
+**/.symlinks/
+**/DerivedData/
+**/Flutter/ephemeral/
+**/flutter/generated_plugin_registrant.*
+**/flutter/generated_plugins.cmake
+
+# IDE / OS files
+.idea/
+.vscode/
+**/.DS_Store
+
+# Local environment files
+.env
+.env.*
