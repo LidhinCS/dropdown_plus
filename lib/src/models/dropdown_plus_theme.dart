@@ -16,7 +16,7 @@ import 'package:flutter/material.dart';
 ///   hintStyle: TextStyle(color: Colors.white54),
 ///   itemTextStyle: TextStyle(color: Colors.white),
 ///   selectedItemTextStyle: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold),
-///   chipBackgroundColor: Colors.blueAccent.withOpacity(0.2),
+///   chipBackgroundColor: Colors.blueAccent.withValues(alpha: 0.2),
 ///   chipTextStyle: TextStyle(color: Colors.blueAccent),
 ///   borderRadius: 8,
 ///   checkboxActiveColor: Colors.blueAccent,

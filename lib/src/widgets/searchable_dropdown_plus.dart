@@ -46,7 +46,7 @@ import '../models/dropdown_plus_theme_style.dart';
 ///   ...
 /// )
 /// ```
-class SearchableDropdownPlus<C extends StateStreamableSource<S>, S>
+class SearchableDropdownPlus<C extends BlocBase<S>, S>
     extends StatefulWidget {
   const SearchableDropdownPlus({
     required this.cubit,
@@ -146,7 +146,7 @@ class SearchableDropdownPlus<C extends StateStreamableSource<S>, S>
       _SearchableDropdownPlusState<C, S>();
 }
 
-class _SearchableDropdownPlusState<C extends StateStreamableSource<S>, S>
+class _SearchableDropdownPlusState<C extends BlocBase<S>, S>
     extends State<SearchableDropdownPlus<C, S>> {
   List<DropdownItem<dynamic>> _items = [];
   List<DropdownItem<dynamic>> _cache = [];
@@ -220,14 +220,14 @@ class _SearchableDropdownPlusState<C extends StateStreamableSource<S>, S>
         const DropdownPlusTheme();
     final cs = Theme.of(context).colorScheme;
 
-    final borderCol = t.borderColor ?? cs.outline.withOpacity(0.5);
+    final borderCol = t.borderColor ?? cs.outline.withValues(alpha: 0.5);
     final activeBorderCol = t.activeBorderColor ?? cs.primary;
-    final divCol = t.dividerColor ?? cs.outline.withOpacity(0.08);
+    final divCol = t.dividerColor ?? cs.outline.withValues(alpha: 0.08);
     final loadCol = t.loadingIndicatorColor ?? cs.primary;
-    final noResIconCol = t.noResultsIconColor ?? cs.onSurface.withOpacity(0.4);
+    final noResIconCol = t.noResultsIconColor ?? cs.onSurface.withValues(alpha: 0.4);
     final arrowCol = _isOpen
         ? activeBorderCol
-        : (t.arrowIconColor ?? cs.onSurface.withOpacity(0.6));
+        : (t.arrowIconColor ?? cs.onSurface.withValues(alpha: 0.6));
 
     return BlocProvider<C>(
       create: (_) => widget.cubit,
@@ -286,7 +286,7 @@ class _SearchableDropdownPlusState<C extends StateStreamableSource<S>, S>
           boxShadow: _isOpen
               ? [
                   BoxShadow(
-                    color: activeBorderCol.withOpacity(0.1),
+                    color: activeBorderCol.withValues(alpha: 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -326,7 +326,7 @@ class _SearchableDropdownPlusState<C extends StateStreamableSource<S>, S>
         style: t.hintStyle ??
             TextStyle(
                 fontSize: 14,
-                color: cs.onSurface.withOpacity(0.6),
+                color: cs.onSurface.withValues(alpha: 0.6),
                 fontWeight: FontWeight.w400),
       );
     }
@@ -358,7 +358,7 @@ class _SearchableDropdownPlusState<C extends StateStreamableSource<S>, S>
               padding: const EdgeInsets.only(top: 6),
               child: Material(
                 elevation: t.menuElevation,
-                shadowColor: Colors.black.withOpacity(0.15),
+                shadowColor: Colors.black.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(t.menuBorderRadius),
                 color: t.menuBackgroundColor ?? Colors.white,
                 child: Container(
@@ -366,7 +366,7 @@ class _SearchableDropdownPlusState<C extends StateStreamableSource<S>, S>
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(t.menuBorderRadius),
                     border: Border.all(
-                      color: t.menuBorderColor ?? cs.outline.withOpacity(0.2),
+                      color: t.menuBorderColor ?? cs.outline.withValues(alpha: 0.2),
                     ),
                   ),
                   child: Column(
@@ -390,7 +390,7 @@ class _SearchableDropdownPlusState<C extends StateStreamableSource<S>, S>
       child: Container(
         decoration: BoxDecoration(
           color: t.searchBarBackgroundColor ??
-              cs.surfaceContainerHighest.withOpacity(0.3),
+              cs.surfaceContainerHighest.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(t.searchBarBorderRadius),
         ),
         child: TextField(
@@ -399,10 +399,10 @@ class _SearchableDropdownPlusState<C extends StateStreamableSource<S>, S>
           decoration: InputDecoration(
             hintText: widget.searchHint ?? 'Search…',
             hintStyle: t.searchHintStyle ??
-                TextStyle(fontSize: 14, color: cs.onSurface.withOpacity(0.5)),
+                TextStyle(fontSize: 14, color: cs.onSurface.withValues(alpha: 0.5)),
             prefixIcon: Icon(Icons.search_rounded,
                 size: 20,
-                color: t.searchIconColor ?? cs.onSurface.withOpacity(0.5)),
+                color: t.searchIconColor ?? cs.onSurface.withValues(alpha: 0.5)),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(vertical: 12),
           ),
@@ -456,7 +456,7 @@ class _SearchableDropdownPlusState<C extends StateStreamableSource<S>, S>
                   decoration: BoxDecoration(
                     color: isSelected
                         ? (t.selectedItemBackgroundColor ??
-                            cs.primaryContainer.withOpacity(0.3))
+                            cs.primaryContainer.withValues(alpha: 0.3))
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -491,7 +491,7 @@ class _SearchableDropdownPlusState<C extends StateStreamableSource<S>, S>
                   widget.loadingText!,
                   style: t.loadingTextStyle ??
                       TextStyle(
-                          fontSize: 13, color: cs.onSurface.withOpacity(0.6)),
+                          fontSize: 13, color: cs.onSurface.withValues(alpha: 0.6)),
                 ),
               ),
           ],
@@ -513,7 +513,7 @@ class _SearchableDropdownPlusState<C extends StateStreamableSource<S>, S>
                 textAlign: TextAlign.center,
                 style: t.noResultsTextStyle ??
                     TextStyle(
-                        fontSize: 13, color: cs.onSurface.withOpacity(0.6)),
+                        fontSize: 13, color: cs.onSurface.withValues(alpha: 0.6)),
               ),
             ),
         ],
