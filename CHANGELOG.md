@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed compact-mode bottom overflow in `MultiSelectDropdownPlus` by constraining open panel height to available parent space
 
+## [0.1.3] - 2026-03-15
+
+### Fixed
+- Fixed `flutter_bloc` downgrade/analysis compatibility by removing the `StateStreamableSource` type constraint from dropdown widgets.
+
 ## [0.1.0] - 2025-01-01
 
 ### Added
