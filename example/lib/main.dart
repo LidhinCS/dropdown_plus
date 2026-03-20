@@ -129,7 +129,7 @@ class _ExamplePageState extends State<ExamplePage> {
               noResultsText: 'No users found',
               loadingText: 'Loading…',
               onSearch: _singleCubit.search,
-              themeStyle: DropdownPlusThemeStyle.compact,
+              themeStyle: DropdownPlusThemeStyle.minimal,
               onStateChange: _stateHandler,
               onSelectionChanged: (item) =>
                   setState(() => _selected = item as DropdownItem<User>),
@@ -160,17 +160,19 @@ class _ExamplePageState extends State<ExamplePage> {
               dropdownTheme: DropdownPlusTheme(
                 activeBorderColor: Colors.teal,
                 checkboxActiveColor: Colors.teal,
-                chipBackgroundColor: Colors.teal.withOpacity(0.1),
+                chipBackgroundColor: Colors.teal.withValues(alpha: 0.1),
                 chipTextStyle: const TextStyle(
                     color: Colors.teal, fontWeight: FontWeight.w600),
-                chipBorderColor: Colors.teal.withOpacity(0.4),
+                chipBorderColor: Colors.teal.withValues(alpha: 0.4),
                 selectedItemTextStyle: const TextStyle(
                     color: Colors.teal, fontWeight: FontWeight.bold),
-                selectedItemBackgroundColor: Colors.teal.withOpacity(0.08),
+                selectedItemBackgroundColor:
+                    Colors.teal.withValues(alpha: 0.08),
                 loadingIndicatorColor: Colors.teal,
                 selectAllTextStyle: const TextStyle(
                     color: Colors.teal, fontWeight: FontWeight.bold),
-                selectedCountBackgroundColor: Colors.teal.withOpacity(0.15),
+                selectedCountBackgroundColor:
+                    Colors.teal.withValues(alpha: 0.15),
                 selectedCountTextStyle: const TextStyle(
                     color: Colors.teal, fontWeight: FontWeight.w600),
               ),

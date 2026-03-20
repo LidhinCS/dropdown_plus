@@ -137,7 +137,7 @@ SearchableDropdownPlus(
     // Items
     itemTextStyle: TextStyle(color: Colors.black87),
     selectedItemTextStyle: TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold),
-    selectedItemBackgroundColor: Colors.deepPurple.withOpacity(0.08),
+    selectedItemBackgroundColor: Colors.deepPurple.withValues(alpha: 0.08),
 
     // Loading / empty
     loadingIndicatorColor: Colors.deepPurple,
@@ -204,15 +204,15 @@ dropdownTheme: DropdownPlusTheme(
   triggerTextStyle: TextStyle(color: Colors.white),
   itemTextStyle: TextStyle(color: Colors.white70),
   selectedItemTextStyle: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w600),
-  selectedItemBackgroundColor: Colors.blueAccent.withOpacity(0.15),
+  selectedItemBackgroundColor: Colors.blueAccent.withValues(alpha:0.15),
   dividerColor: Colors.white10,
   searchBarBackgroundColor: Colors.white10,
   searchHintStyle: TextStyle(color: Colors.white38),
   searchTextStyle: TextStyle(color: Colors.white),
   searchIconColor: Colors.white38,
-  chipBackgroundColor: Colors.blueAccent.withOpacity(0.2),
+  chipBackgroundColor: Colors.blueAccent.withValues(alpha: 0.2),
   chipTextStyle: TextStyle(color: Colors.blueAccent),
-  chipBorderColor: Colors.blueAccent.withOpacity(0.4),
+  chipBorderColor: Colors.blueAccent.withValues(alpha: 0.4),
   loadingIndicatorColor: Colors.blueAccent,
   checkboxActiveColor: Colors.blueAccent,
   headerBackgroundColor: const Color(0xFF252535),

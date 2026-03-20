@@ -41,7 +41,7 @@ import '../models/dropdown_plus_theme_style.dart';
 ///       setState(() => _selected = items.map((e) => e.value).toList()),
 /// )
 /// ```
-class MultiSelectDropdownPlus<C extends StateStreamableSource<S>, S>
+class MultiSelectDropdownPlus<C extends BlocBase<S>, S>
     extends StatefulWidget {
   const MultiSelectDropdownPlus({
     required this.cubit,
@@ -138,7 +138,7 @@ const double _triggerAndGapEstimate = 70.0;
 /// Minimum panel height so the list area remains usable when space is tight.
 const double _minPanelHeight = 120.0;
 
-class _MultiSelectDropdownPlusState<C extends StateStreamableSource<S>, S>
+class _MultiSelectDropdownPlusState<C extends BlocBase<S>, S>
     extends State<MultiSelectDropdownPlus<C, S>> {
   List<DropdownItem<dynamic>> _items = [];
   List<DropdownItem<dynamic>> _cache = [];
@@ -231,13 +231,13 @@ class _MultiSelectDropdownPlusState<C extends StateStreamableSource<S>, S>
         const DropdownPlusTheme();
     final cs = Theme.of(context).colorScheme;
 
-    final borderCol = t.borderColor ?? cs.outline.withOpacity(0.5);
+    final borderCol = t.borderColor ?? cs.outline.withValues(alpha: 0.5);
     final activeBorderCol = t.activeBorderColor ?? cs.primary;
-    final divCol = t.dividerColor ?? cs.outline.withOpacity(0.1);
+    final divCol = t.dividerColor ?? cs.outline.withValues(alpha: 0.1);
     final loadCol = t.loadingIndicatorColor ?? cs.primary;
     final arrowCol = _isOpen
         ? activeBorderCol
-        : (t.arrowIconColor ?? cs.onSurface.withOpacity(0.6));
+        : (t.arrowIconColor ?? cs.onSurface.withValues(alpha: 0.6));
 
     return BlocProvider<C>(
       create: (_) => widget.cubit,
@@ -306,7 +306,7 @@ class _MultiSelectDropdownPlusState<C extends StateStreamableSource<S>, S>
           boxShadow: _isOpen
               ? [
                   BoxShadow(
-                    color: activeBorderCol.withOpacity(0.1),
+                    color: activeBorderCol.withValues(alpha: 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -347,7 +347,7 @@ class _MultiSelectDropdownPlusState<C extends StateStreamableSource<S>, S>
         style: t.hintStyle ??
             TextStyle(
                 fontSize: 14,
-                color: cs.onSurface.withOpacity(0.6),
+                color: cs.onSurface.withValues(alpha: 0.6),
                 fontWeight: FontWeight.w400),
       );
     }
@@ -371,7 +371,7 @@ class _MultiSelectDropdownPlusState<C extends StateStreamableSource<S>, S>
               padding: const EdgeInsets.only(top: 6),
               child: Material(
                 elevation: t.menuElevation,
-                shadowColor: Colors.black.withOpacity(0.15),
+                shadowColor: Colors.black.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(t.menuBorderRadius),
                 color: t.menuBackgroundColor ?? Colors.white,
                 child: Container(
@@ -379,7 +379,7 @@ class _MultiSelectDropdownPlusState<C extends StateStreamableSource<S>, S>
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(t.menuBorderRadius),
                     border: Border.all(
-                      color: t.menuBorderColor ?? cs.outline.withOpacity(0.2),
+                      color: t.menuBorderColor ?? cs.outline.withValues(alpha: 0.2),
                     ),
                   ),
                   child: Column(
@@ -404,7 +404,7 @@ class _MultiSelectDropdownPlusState<C extends StateStreamableSource<S>, S>
       child: Container(
         decoration: BoxDecoration(
           color: t.searchBarBackgroundColor ??
-              cs.surfaceContainerHighest.withOpacity(0.3),
+              cs.surfaceContainerHighest.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(t.searchBarBorderRadius),
         ),
         child: TextField(
@@ -413,10 +413,10 @@ class _MultiSelectDropdownPlusState<C extends StateStreamableSource<S>, S>
           decoration: InputDecoration(
             hintText: widget.searchHint ?? 'Search…',
             hintStyle: t.searchHintStyle ??
-                TextStyle(fontSize: 14, color: cs.onSurface.withOpacity(0.5)),
+                TextStyle(fontSize: 14, color: cs.onSurface.withValues(alpha: 0.5)),
             prefixIcon: Icon(Icons.search_rounded,
                 size: 20,
-                color: t.searchIconColor ?? cs.onSurface.withOpacity(0.5)),
+                color: t.searchIconColor ?? cs.onSurface.withValues(alpha: 0.5)),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(vertical: 12),
           ),
@@ -436,7 +436,7 @@ class _MultiSelectDropdownPlusState<C extends StateStreamableSource<S>, S>
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: t.headerBackgroundColor ??
-            cs.surfaceContainerHighest.withOpacity(0.3),
+            cs.surfaceContainerHighest.withValues(alpha: 0.3),
         border: Border(
           bottom: BorderSide(color: divCol),
         ),
@@ -471,7 +471,7 @@ class _MultiSelectDropdownPlusState<C extends StateStreamableSource<S>, S>
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: t.selectedCountBackgroundColor ??
-                        cs.primary.withOpacity(0.1),
+                        cs.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -490,7 +490,7 @@ class _MultiSelectDropdownPlusState<C extends StateStreamableSource<S>, S>
                   _searchController.clear();
                 },
                 child: Icon(Icons.close_rounded,
-                    size: 20, color: cs.onSurface.withOpacity(0.6)),
+                    size: 20, color: cs.onSurface.withValues(alpha: 0.6)),
               ),
             ],
           ),
@@ -527,7 +527,7 @@ class _MultiSelectDropdownPlusState<C extends StateStreamableSource<S>, S>
                 decoration: BoxDecoration(
                   color: isSelected
                       ? (t.selectedItemBackgroundColor ??
-                          cs.primaryContainer.withOpacity(0.3))
+                          cs.primaryContainer.withValues(alpha: 0.3))
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -560,19 +560,19 @@ class _MultiSelectDropdownPlusState<C extends StateStreamableSource<S>, S>
               Text(widget.loadingText!,
                   style: t.loadingTextStyle ??
                       TextStyle(
-                          fontSize: 13, color: cs.onSurface.withOpacity(0.6))),
+                          fontSize: 13, color: cs.onSurface.withValues(alpha: 0.6))),
             ],
           ] else ...[
             Icon(Icons.search_off_rounded,
                 size: 48,
-                color: t.noResultsIconColor ?? cs.onSurface.withOpacity(0.4)),
+                color: t.noResultsIconColor ?? cs.onSurface.withValues(alpha: 0.4)),
             const SizedBox(height: 12),
             Text(
               widget.noResultsText ?? 'No items found',
               style: t.noResultsTextStyle ??
                   TextStyle(
                       fontSize: 14,
-                      color: cs.onSurface.withOpacity(0.6),
+                      color: cs.onSurface.withValues(alpha: 0.6),
                       fontWeight: FontWeight.w500),
             ),
           ],
@@ -621,12 +621,12 @@ class _MultiSelectDropdownPlusState<C extends StateStreamableSource<S>, S>
       decoration: BoxDecoration(
         color: isCount
             ? (t.countChipBackgroundColor ?? cs.surfaceContainerHighest)
-            : (t.chipBackgroundColor ?? cs.primary.withOpacity(0.1)),
+            : (t.chipBackgroundColor ?? cs.primary.withValues(alpha: 0.1)),
         borderRadius: BorderRadius.circular(t.chipBorderRadius),
         border: Border.all(
           color: isCount
-              ? (t.chipBorderColor ?? cs.outline.withOpacity(0.3))
-              : (t.chipBorderColor ?? cs.primary.withOpacity(0.3)),
+              ? (t.chipBorderColor ?? cs.outline.withValues(alpha: 0.3))
+              : (t.chipBorderColor ?? cs.primary.withValues(alpha: 0.3)),
         ),
       ),
       child: Row(
@@ -639,7 +639,7 @@ class _MultiSelectDropdownPlusState<C extends StateStreamableSource<S>, S>
                   ? (t.countChipTextStyle ??
                       TextStyle(
                           fontSize: 12,
-                          color: cs.onSurface.withOpacity(0.7),
+                          color: cs.onSurface.withValues(alpha: 0.7),
                           fontWeight: FontWeight.w500))
                   : (t.chipTextStyle ??
                       TextStyle(
@@ -657,7 +657,7 @@ class _MultiSelectDropdownPlusState<C extends StateStreamableSource<S>, S>
               child: Container(
                 padding: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
-                  color: (t.chipDeleteIconColor ?? cs.primary).withOpacity(0.2),
+                  color: (t.chipDeleteIconColor ?? cs.primary).withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -682,7 +682,7 @@ class _MultiSelectDropdownPlusState<C extends StateStreamableSource<S>, S>
     bool isSelected,
   ) {
     final activeCol = t.checkboxActiveColor ?? cs.primary;
-    final inactiveCol = t.checkboxBorderColor ?? cs.outline.withOpacity(0.4);
+    final inactiveCol = t.checkboxBorderColor ?? cs.outline.withValues(alpha: 0.4);
 
     return Row(
       children: [
