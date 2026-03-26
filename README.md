@@ -25,6 +25,14 @@ A highly customisable Flutter dropdown package with first-class **BLoC / Cubit**
 
 ---
 
+## Screenshots
+
+### Single select
+![Single select demo](doc/images/dark_single_select.png)
+
+### Multi select
+![Multi select demo](doc/images/multiselect.png) ![](doc/images/multi_select_selected.png)
+
 ## Installation
 
 Add to your `pubspec.yaml`:
