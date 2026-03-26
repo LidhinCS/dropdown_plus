@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] - 2026-03-15
+
+### Docs
+- Version bump and documentation-only update (no functional changes).
+
+## [0.1.4] - 2026-03-15
+
+### Docs
+- Updated README with screenshots for better usage understanding.
+
+## [0.1.3] - 2026-03-15
+
+### Fixed
+- Fixed `flutter_bloc` downgrade/analysis compatibility by removing the `StateStreamableSource` type constraint from dropdown widgets.
+
 ## [0.1.2] - 2026-03-15
 
 ### Added
@@ -16,16 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Fixed compact-mode bottom overflow in `MultiSelectDropdownPlus` by constraining open panel height to available parent space
-
-## [0.1.3] - 2026-03-15
-
-### Fixed
-- Fixed `flutter_bloc` downgrade/analysis compatibility by removing the `StateStreamableSource` type constraint from dropdown widgets.
-
-## [0.1.4] - 2026-03-15
-
-### Docs
-- Updated README with screenshots for better usage understanding.
 
 ## [0.1.0] - 2025-01-01
 
