@@ -22,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed `flutter_bloc` downgrade/analysis compatibility by removing the `StateStreamableSource` type constraint from dropdown widgets.
 
+## [0.1.4] - 2026-03-15
+
+### Docs
+- Updated README with screenshots for better usage understanding.
+
 ## [0.1.0] - 2025-01-01
 
 ### Added
