@@ -119,9 +119,9 @@ class _ExamplePageState extends State<ExamplePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── Default theme ─────────────────────────────────────────────
-            const Text('Single Select — Default Theme',
+            /* const Text('Single Select — Default Theme',
                 style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
+            const SizedBox(height: 8),   */
             SearchableDropdownPlus<UsersCubit, UsersState>(
               cubit: _singleCubit,
               hintText: 'Search and select a user…',
@@ -129,7 +129,7 @@ class _ExamplePageState extends State<ExamplePage> {
               noResultsText: 'No users found',
               loadingText: 'Loading…',
               onSearch: _singleCubit.search,
-              themeStyle: DropdownPlusThemeStyle.minimal,
+              themeStyle: DropdownPlusThemeStyle.dark,
               onStateChange: _stateHandler,
               onSelectionChanged: (item) =>
                   setState(() => _selected = item as DropdownItem<User>),
@@ -144,7 +144,7 @@ class _ExamplePageState extends State<ExamplePage> {
             const SizedBox(height: 32),
 
             // ── Custom theme ──────────────────────────────────────────────
-            const Text('Multi Select — Custom Theme',
+            /* const Text('Multi Select — Custom Theme',
                 style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             MultiSelectDropdownPlus<UsersCubit, UsersState>(
@@ -177,6 +177,7 @@ class _ExamplePageState extends State<ExamplePage> {
                     color: Colors.teal, fontWeight: FontWeight.w600),
               ),
             ),
+            /*
             if (_multiSelected.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
@@ -185,6 +186,8 @@ class _ExamplePageState extends State<ExamplePage> {
                   style: const TextStyle(color: Colors.teal),
                 ),
               ),
+              */
+              */
           ],
         ),
       ),
