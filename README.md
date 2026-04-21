@@ -3,18 +3,21 @@
 [![pub package](https://img.shields.io/pub/v/dropdown_plus.svg)](https://pub.dev/packages/dropdown_plus)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A highly customisable Flutter dropdown package with first-class **BLoC / Cubit** integration. Provides two ready-to-use widgets:
+A highly customisable Flutter dropdown package with optional **BLoC / Cubit** integration. Use `*Plus` widgets with a cubit, or plain widgets with your own state.
 
 | Widget | Description |
 |--------|-------------|
-| `SearchableDropdownPlus` | Single-select searchable dropdown |
-| `MultiSelectDropdownPlus` | Multi-select dropdown with chip display |
+| `SearchableDropdownPlus` | Single-select searchable dropdown (BLoC/Cubit) |
+| `MultiSelectDropdownPlus` | Multi-select with chips (BLoC/Cubit) |
+| `SearchableDropdown` | Single-select searchable dropdown (no BLoC — pass `items` / `isLoading`) |
+| `MultiSelectDropdown` | Multi-select with chips (no BLoC — pass `items` / `isLoading`) |
 
 ---
 
 ## Features
 
-- 🔌 **BLoC / Cubit integration** — pass any `Cubit` or `Bloc` and let the widget react to state changes automatically
+- 🔌 **BLoC / Cubit integration** — `SearchableDropdownPlus` / `MultiSelectDropdownPlus` wire to any `Cubit` or `Bloc`
+- 📦 **Plain StatefulWidget API** — `SearchableDropdown` / `MultiSelectDropdown` work with `setState`, Provider, Riverpod, etc.
 - 🔍 **Real-time search** — calls your cubit's search method as the user types
 - 📴 **Offline caching** — falls back to client-side filtering when no internet is available
 - 🎨 **Preset + custom theming** — use `themeStyle` for out-of-the-box looks or `DropdownPlusTheme` for full control
@@ -28,10 +31,14 @@ A highly customisable Flutter dropdown package with first-class **BLoC / Cubit**
 ## Screenshots
 
 ### Single select
-![Single select demo](doc/images/dark_single_select.png)
+<img src="doc/images/dark_single_select.png" alt="Single select demo" width="320" />
 
 ### Multi select
-![Multi select demo](doc/images/multiselect.png) ![](doc/images/multi_select_selected.png)
+<p>
+  <img src="doc/images/multiselect.png" alt="Multi select demo" width="280" />
+  &nbsp;
+  <img src="doc/images/multi_select_selected.png" alt="Multi select with selection" width="280" />
+</p>
 
 ## Installation
 
@@ -111,11 +118,57 @@ MultiSelectDropdownPlus<WorkerCubit, WorkerState>(
 )
 ```
 
+### Without BLoC
+
+Pass the current item list and loading flag from your own state. If `onSearch` is omitted, the search box filters **locally** over `items`. If `onSearch` is set, call your API and rebuild with updated `items` / `isLoading`.
+
+**Single select**
+
+```dart
+SearchableDropdown(
+  hintText: 'Search worker…',
+  items: workers,
+  isLoading: loadingWorkers,
+  selectedValue: selectedWorkerItem,
+  onSearch: (query) async {
+    setState(() => loadingWorkers = true);
+    final list = await api.searchWorkers(query);
+    setState(() {
+      workers = list.map((w) => DropdownItem(value: w, label: w.name)).toList();
+      loadingWorkers = false;
+    });
+  },
+  onSelectionChanged: (item) =>
+      setState(() => selectedWorkerItem = item),
+)
+```
+
+**Multi select**
+
+```dart
+MultiSelectDropdown(
+  hintText: 'Select workers…',
+  items: workers,
+  isLoading: loadingWorkers,
+  selectedItems: selectedWorkerItems,
+  onSearch: (query) async {
+    setState(() => loadingWorkers = true);
+    final list = await api.searchWorkers(query);
+    setState(() {
+      workers = list.map((w) => DropdownItem(value: w, label: w.name)).toList();
+      loadingWorkers = false;
+    });
+  },
+  onSelectionChanged: (items) =>
+      setState(() => selectedWorkerItems = items),
+)
+```
+
 ---
 
 ## Theme Customisation
 
-Pass a `DropdownPlusTheme` to either widget to change its appearance:
+Pass a `DropdownPlusTheme` to any dropdown widget (`*Plus` or plain) to change its appearance:
 
 ```dart
 SearchableDropdownPlus(
@@ -313,6 +366,39 @@ All parameters from `SearchableDropdownPlus` plus:
 | `onSelectionChanged` | `void Function(List<DropdownItem>)?` | — | Selection change callback |
 | `maxDisplayChips` | `int` | `2` | Max chips before "+N more" overflow |
 | `selectedItemBuilder` | `Widget Function(List<DropdownItem>)?` | — | Custom chips display |
+| `buttonHeight` | `double?` | — | Fixed trigger height |
+| `buttonWidth` | `double?` | — | Fixed trigger width |
+
+### `SearchableDropdown`
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `hintText` | `String` | ✅ | Placeholder text |
+| `items` | `List<DropdownItem>` | ✅ | Items to show (update from parent when search results change) |
+| `isLoading` | `bool` | ✅ | Shows loading UI in trigger and panel when empty |
+| `onSearch` | `void Function(String)?` | — | Remote search on each keystroke when online; omit for local-only filter |
+| `selectedValue` | `DropdownItem?` | — | Controlled selection |
+| `onSelectionChanged` | `void Function(DropdownItem)?` | — | User picked an item |
+| `searchHint` | `String?` | — | Search placeholder |
+| `noResultsText` | `String?` | — | Empty state text |
+| `loadingText` | `String?` | — | Loading message |
+| `needInitialFetch` | `bool` | — | If `true` and `onSearch` is set, calls `onSearch('')` on mount |
+| `dropdownTheme` | `DropdownPlusTheme?` | — | Theme overrides |
+| `themeStyle` | `DropdownPlusThemeStyle?` | — | Preset style |
+| `itemBuilder` | `Widget Function(item, isSelected)?` | — | Custom row |
+| `selectedValueBuilder` | `Widget Function(item)?` | — | Custom trigger when selected |
+| `checkInternetConnection` | `Future<bool> Function()?` | — | Offline → local filter |
+
+### `MultiSelectDropdown`
+
+Same parameters as `SearchableDropdown`, plus:
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `selectedItems` | `List<DropdownItem>` | `[]` | Controlled selection |
+| `onSelectionChanged` | `void Function(List<DropdownItem>)?` | — | Selection changed |
+| `maxDisplayChips` | `int` | `2` | Chips before "+N more" |
+| `selectedItemBuilder` | `Widget Function(List<DropdownItem>)?` | — | Custom chip row in trigger |
 | `buttonHeight` | `double?` | — | Fixed trigger height |
 | `buttonWidth` | `double?` | — | Fixed trigger width |
 
