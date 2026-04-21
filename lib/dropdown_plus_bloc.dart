@@ -1,8 +1,10 @@
 /// **dropdown_plus** — A customizable Flutter dropdown package with BLoC integration.
 ///
-/// This library provides two powerful dropdown widgets:
-/// - [SearchableDropdownPlus]: A single-select searchable dropdown with BLoC support.
-/// - [MultiSelectDropdownPlus]: A multi-select dropdown with BLoC support and chip display.
+/// This library provides dropdown widgets with optional BLoC support:
+/// - [SearchableDropdownPlus]: single-select searchable dropdown with BLoC/Cubit.
+/// - [MultiSelectDropdownPlus]: multi-select with chips and BLoC/Cubit.
+/// - [SearchableDropdown]: same single-select UI without BLoC (pass [items] / [isLoading]).
+/// - [MultiSelectDropdown]: same multi-select UI without BLoC (pass [items] / [isLoading]).
 ///
 /// ## Quick Start
 ///
@@ -51,5 +53,7 @@ library dropdown_plus;
 export 'src/models/dropdown_item.dart';
 export 'src/models/dropdown_plus_theme.dart';
 export 'src/models/dropdown_plus_theme_style.dart';
+export 'src/widgets/multi_select_dropdown.dart';
 export 'src/widgets/multi_select_dropdown_plus.dart';
+export 'src/widgets/searchable_dropdown.dart';
 export 'src/widgets/searchable_dropdown_plus.dart';
