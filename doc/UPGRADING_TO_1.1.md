@@ -39,6 +39,23 @@ SearchableDropdownPlus<UsersCubit, UsersState>(
 
 Wrap in `BlocBuilder` if the parent needs to pass `error` from cubit state.
 
+## Form fields (1.1.1)
+
+```dart
+Form(
+  key: _formKey,
+  child: SearchableDropdownFormField(
+    hintText: 'Select user',
+    items: users,
+    isLoading: isLoading,
+    validator: (value) => value == null ? 'Required' : null,
+    onSaved: (value) => _selectedUser = value,
+  ),
+)
+```
+
+BLoC variant: `SearchableDropdownPlusFormField<C, S>` with the same `validator` / `onSaved` / `initialValue` params.
+
 ## Internal refactor
 
 Widget UI is now built from shared components in `lib/src/internal/`. Public API names are unchanged.
