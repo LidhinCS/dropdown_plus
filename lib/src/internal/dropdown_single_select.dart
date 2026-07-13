@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/dropdown_item.dart';
 import '../utils/debounced_callback.dart' show dropdownListMaxHeight;
+import 'dropdown_pagination.dart';
 import 'dropdown_theme_resolver.dart';
 
 class DropdownSingleSelectItemRow extends StatelessWidget {
@@ -51,13 +52,16 @@ class DropdownSingleSelectItemRow extends StatelessWidget {
   }
 }
 
-class DropdownSingleSelectItemList extends StatelessWidget {
+class DropdownSingleSelectItemList extends StatefulWidget {
   const DropdownSingleSelectItemList({
     required this.resolved,
     required this.items,
     required this.isItemSelected,
     required this.onItemTap,
     this.itemBuilder,
+    this.onLoadMore,
+    this.hasMore = false,
+    this.isLoadingMore = false,
     super.key,
   });
 
@@ -67,54 +71,106 @@ class DropdownSingleSelectItemList extends StatelessWidget {
   final void Function(DropdownItem<dynamic> item) onItemTap;
   final Widget Function(DropdownItem<dynamic> item, bool isSelected)?
       itemBuilder;
+  final VoidCallback? onLoadMore;
+  final bool hasMore;
+  final bool isLoadingMore;
+
+  @override
+  State<DropdownSingleSelectItemList> createState() =>
+      _DropdownSingleSelectItemListState();
+}
+
+class _DropdownSingleSelectItemListState
+    extends State<DropdownSingleSelectItemList> {
+  late final DropdownPaginationScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = DropdownPaginationScrollController(
+      onLoadMore: widget.onLoadMore,
+      hasMore: widget.hasMore,
+      isLoadingMore: widget.isLoadingMore,
+    );
+  }
+
+  @override
+  void didUpdateWidget(DropdownSingleSelectItemList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _scrollController.hasMore = widget.hasMore;
+    _scrollController.isLoadingMore = widget.isLoadingMore;
+    _scrollController.onLoadMore = widget.onLoadMore;
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final t = resolved.theme;
-    final cs = resolved.colorScheme;
-    final divCol = resolved.dividerColor;
+    final t = widget.resolved.theme;
+    final cs = widget.resolved.colorScheme;
+    final divCol = widget.resolved.dividerColor;
+    final showFooter = widget.isLoadingMore;
+    final maxH = dropdownListMaxHeight(t.menuMaxHeight);
+    const estimatedRowHeight = 49.0;
+    final contentHeight = widget.items.length * estimatedRowHeight +
+        (showFooter ? 52.0 : 0.0);
+    final listHeight = contentHeight.clamp(0.0, maxH);
 
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        maxHeight: dropdownListMaxHeight(t.menuMaxHeight),
-      ),
-      child: ListView.separated(
-        shrinkWrap: true,
+    return SizedBox(
+      height: listHeight,
+      child: ListView.builder(
+        controller: _scrollController,
         padding: const EdgeInsets.symmetric(vertical: 4),
-        itemCount: items.length,
-        separatorBuilder: (_, __) => Divider(
-          height: 1,
-          thickness: 1,
-          indent: 12,
-          endIndent: 12,
-          color: divCol,
-        ),
+        itemCount: widget.items.length + (showFooter ? 1 : 0),
         itemBuilder: (ctx, i) {
-          final item = items[i];
-          final isSelected = isItemSelected(item);
-          return Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => onItemTap(item),
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                padding: t.itemPadding ??
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? (t.selectedItemBackgroundColor ??
-                          cs.primaryContainer.withValues(alpha: 0.3))
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: DropdownSingleSelectItemRow(
-                  resolved: resolved,
-                  item: item,
-                  isSelected: isSelected,
-                  itemBuilder: itemBuilder,
+          if (i >= widget.items.length) {
+            return DropdownLoadMoreFooter(isLoading: widget.isLoadingMore);
+          }
+
+          final item = widget.items[i];
+          final isSelected = widget.isItemSelected(item);
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (i > 0) dropdownItemDivider(divCol),
+              Semantics(
+                button: true,
+                selected: isSelected,
+                label: item.label,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => widget.onItemTap(item),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: t.itemPadding ??
+                          const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? (t.selectedItemBackgroundColor ??
+                                cs.primaryContainer.withValues(alpha: 0.3))
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: DropdownSingleSelectItemRow(
+                        resolved: widget.resolved,
+                        item: item,
+                        isSelected: isSelected,
+                        itemBuilder: widget.itemBuilder,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ],
           );
         },
       ),

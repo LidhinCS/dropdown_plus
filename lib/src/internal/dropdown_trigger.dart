@@ -13,6 +13,7 @@ class DropdownTriggerButton extends StatelessWidget {
     this.semanticsLabel,
     this.width,
     this.height,
+    this.focusNode,
     super.key,
   });
 
@@ -25,6 +26,7 @@ class DropdownTriggerButton extends StatelessWidget {
   final String? semanticsLabel;
   final double? width;
   final double? height;
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -35,9 +37,11 @@ class DropdownTriggerButton extends StatelessWidget {
     final arrowCol = resolved.arrowColor(isOpen);
     final effectiveOpen = enabled && isOpen;
 
-    Widget trigger = GestureDetector(
-      onTap: enabled ? onTap : null,
-      child: AnimatedOpacity(
+    Widget trigger = Focus(
+      focusNode: focusNode,
+      child: GestureDetector(
+        onTap: enabled ? onTap : null,
+        child: AnimatedOpacity(
         duration: const Duration(milliseconds: 150),
         opacity: enabled ? 1 : 0.5,
         child: AnimatedContainer(
@@ -90,16 +94,16 @@ class DropdownTriggerButton extends StatelessWidget {
           ),
         ),
       ),
+    ),
     );
 
-    if (semanticsLabel != null) {
-      trigger = Semantics(
-        button: true,
-        enabled: enabled,
-        label: semanticsLabel,
-        child: trigger,
-      );
-    }
+    trigger = Semantics(
+      button: true,
+      enabled: enabled,
+      expanded: effectiveOpen,
+      label: semanticsLabel,
+      child: trigger,
+    );
 
     return trigger;
   }

@@ -51,10 +51,14 @@ class DropdownPanelShell extends StatelessWidget {
                           cs.outline.withValues(alpha: 0.2),
                     ),
                   ),
-                  child: Column(
-                    mainAxisSize:
-                        expandBody ? MainAxisSize.max : MainAxisSize.min,
-                    children: columnChildren,
+                  child: ClipRRect(
+                    borderRadius:
+                        BorderRadius.circular(t.menuBorderRadius),
+                    child: Column(
+                      mainAxisSize:
+                          expandBody ? MainAxisSize.max : MainAxisSize.min,
+                      children: columnChildren,
+                    ),
                   ),
                 ),
               ),

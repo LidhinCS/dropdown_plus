@@ -23,7 +23,7 @@ class DebouncedCallback {
 }
 
 /// Approximate height of the search field + divider inside the dropdown panel.
-const double dropdownSearchHeaderHeight = 70.0;
+const double dropdownSearchHeaderHeight = 76.0;
 
 /// Computes max height for the scrollable item list inside a dropdown panel.
 double dropdownListMaxHeight(double menuMaxHeight) =>

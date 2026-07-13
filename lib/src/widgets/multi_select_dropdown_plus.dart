@@ -81,6 +81,10 @@ class MultiSelectDropdownPlus<C extends BlocBase<S>, S>
     this.errorBuilder,
     this.semanticsLabel,
     this.minSearchLength = 0,
+    this.onLoadMore,
+    this.hasMore = false,
+    this.isLoadingMore = false,
+    this.focusNode,
   });
 
   /// The BLoC/Cubit instance that drives this dropdown.
@@ -155,6 +159,10 @@ class MultiSelectDropdownPlus<C extends BlocBase<S>, S>
   final DropdownErrorBuilder? errorBuilder;
   final String? semanticsLabel;
   final int minSearchLength;
+  final VoidCallback? onLoadMore;
+  final bool hasMore;
+  final bool isLoadingMore;
+  final FocusNode? focusNode;
 
   @override
   State<MultiSelectDropdownPlus<C, S>> createState() =>
@@ -310,7 +318,8 @@ class _MultiSelectDropdownPlusState<C extends BlocBase<S>, S>
                   resolved: resolved,
                   isOpen: _isOpen,
                   enabled: widget.enabled,
-                  semanticsLabel: widget.semanticsLabel,
+                  semanticsLabel: widget.semanticsLabel ?? widget.hintText,
+                  focusNode: widget.focusNode,
                   width: widget.buttonWidth,
                   height: widget.buttonHeight,
                   showLoadingSpinner: _isLoading,
@@ -403,6 +412,9 @@ class _MultiSelectDropdownPlusState<C extends BlocBase<S>, S>
         resolved: resolved,
         items: _items,
         itemBuilder: widget.itemBuilder,
+        onLoadMore: widget.onLoadMore,
+        hasMore: widget.hasMore,
+        isLoadingMore: widget.isLoadingMore,
         isItemSelected: (item) =>
             _selected.any((s) => s.value == item.value),
         onItemTap: _toggleItem,

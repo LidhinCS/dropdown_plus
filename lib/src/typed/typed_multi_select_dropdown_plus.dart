@@ -44,6 +44,10 @@ class TypedMultiSelectDropdownPlus<T, C extends BlocBase<S>, S>
     this.errorBuilder,
     this.semanticsLabel,
     this.minSearchLength = 0,
+    this.onLoadMore,
+    this.hasMore = false,
+    this.isLoadingMore = false,
+    this.focusNode,
   });
 
   final C cubit;
@@ -80,6 +84,10 @@ class TypedMultiSelectDropdownPlus<T, C extends BlocBase<S>, S>
   final DropdownErrorBuilder? errorBuilder;
   final String? semanticsLabel;
   final int minSearchLength;
+  final VoidCallback? onLoadMore;
+  final bool hasMore;
+  final bool isLoadingMore;
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -128,6 +136,10 @@ class TypedMultiSelectDropdownPlus<T, C extends BlocBase<S>, S>
       errorBuilder: errorBuilder,
       semanticsLabel: semanticsLabel,
       minSearchLength: minSearchLength,
+      onLoadMore: onLoadMore,
+      hasMore: hasMore,
+      isLoadingMore: isLoadingMore,
+      focusNode: focusNode,
     );
   }
 }
