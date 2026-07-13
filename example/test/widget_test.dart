@@ -7,6 +7,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('dropdown_plus'), findsOneWidget);
-    expect(find.text('BLoC — single select'), findsOneWidget);
+    expect(find.text('BLoC — single select (legacy)'), findsOneWidget);
+    expect(find.text('Typed API — BLoC single select'), findsOneWidget);
+    expect(find.text('Form — SearchableDropdownFormField'), findsOneWidget);
   });
 }
