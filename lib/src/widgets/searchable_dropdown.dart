@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../internal/dropdown_internet.dart';
+import '../internal/dropdown_panel.dart';
+import '../internal/dropdown_search_bar.dart';
+import '../internal/dropdown_single_select.dart';
+import '../internal/dropdown_states.dart';
+import '../internal/dropdown_theme_resolver.dart';
+import '../internal/dropdown_trigger.dart';
 import '../models/dropdown_item.dart';
 import '../models/dropdown_plus_theme.dart';
 import '../models/dropdown_plus_theme_style.dart';
@@ -31,6 +38,15 @@ class SearchableDropdown extends StatefulWidget {
     this.selectedValueBuilder,
     this.checkInternetConnection,
     this.debounceDuration = Duration.zero,
+    this.enabled = true,
+    this.autofocusSearch = false,
+    this.emptyBuilder,
+    this.loadingBuilder,
+    this.error,
+    this.onRetry,
+    this.errorBuilder,
+    this.semanticsLabel,
+    this.minSearchLength = 0,
   });
 
   /// Items currently shown (after remote search or full list for local filter).
@@ -69,6 +85,20 @@ class SearchableDropdown extends StatefulWidget {
 
   /// Debounce delay before [onSearch] is invoked. Default: no debounce.
   final Duration debounceDuration;
+
+  /// When `false`, the dropdown cannot be opened or searched.
+  final bool enabled;
+
+  /// Focus the search field when the panel opens.
+  final bool autofocusSearch;
+
+  final DropdownEmptyBuilder? emptyBuilder;
+  final DropdownLoadingBuilder? loadingBuilder;
+  final Object? error;
+  final VoidCallback? onRetry;
+  final DropdownErrorBuilder? errorBuilder;
+  final String? semanticsLabel;
+  final int minSearchLength;
 
   @override
   State<SearchableDropdown> createState() => _SearchableDropdownState();
@@ -109,7 +139,8 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
         widget.selectedValue == null) {
       setState(() => _selected = null);
     }
-    if (oldWidget.items != widget.items || oldWidget.isLoading != widget.isLoading) {
+    if (oldWidget.items != widget.items ||
+        oldWidget.isLoading != widget.isLoading) {
       setState(() {
         _items = List.from(widget.items);
         if (widget.items.isNotEmpty &&
@@ -130,10 +161,6 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
     super.dispose();
   }
 
-  Future<bool> _hasInternet() async => widget.checkInternetConnection == null
-      ? true
-      : await widget.checkInternetConnection!();
-
   void _localSearch(String query) {
     final q = query.toLowerCase().trim();
     setState(() {
@@ -143,125 +170,107 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
     });
   }
 
+  Future<void> _handleQueryChanged(String value) async {
+    final online = await dropdownHasInternet(widget.checkInternetConnection);
+    if (!mounted) return;
+    if (online && widget.onSearch != null) {
+      widget.onSearch!(value);
+    } else {
+      _localSearch(value);
+    }
+  }
+
+  Future<void> _handleTriggerTap() async {
+    if (!widget.enabled) return;
+    final opening = !_isOpen;
+    setState(() => _isOpen = opening);
+    if (opening) {
+      final online = await dropdownHasInternet(widget.checkInternetConnection);
+      if (widget.onSearch != null) {
+        if (online) {
+          _searchController.clear();
+          widget.onSearch!('');
+        } else if (_cache.isNotEmpty) {
+          setState(() => _items = _cache);
+        }
+      } else {
+        setState(() {
+          _items = List.from(widget.items);
+          _cache = List.from(widget.items);
+        });
+        if (_searchController.text.isNotEmpty) {
+          _localSearch(_searchController.text);
+        }
+      }
+    } else {
+      _searchController.clear();
+    }
+  }
+
+  void _handleRetry() {
+    if (widget.onRetry != null) {
+      widget.onRetry!();
+    } else if (widget.onSearch != null) {
+      widget.onSearch!(_searchController.text);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final t = widget.dropdownTheme ??
-        (widget.themeStyle != null
-            ? DropdownPlusThemePresets.forStyle(widget.themeStyle!)
-            : null) ??
-        const DropdownPlusTheme();
-    final cs = Theme.of(context).colorScheme;
-
-    final borderCol = t.borderColor ?? cs.outline.withValues(alpha: 0.5);
-    final activeBorderCol = t.activeBorderColor ?? cs.primary;
-    final divCol = t.dividerColor ?? cs.outline.withValues(alpha: 0.08);
-    final loadCol = t.loadingIndicatorColor ?? cs.primary;
-    final noResIconCol =
-        t.noResultsIconColor ?? cs.onSurface.withValues(alpha: 0.4);
-    final arrowCol = _isOpen
-        ? activeBorderCol
-        : (t.arrowIconColor ?? cs.onSurface.withValues(alpha: 0.6));
+    final resolved = DropdownResolvedTheme.resolve(
+      context,
+      dropdownTheme: widget.dropdownTheme,
+      themeStyle: widget.themeStyle,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildTrigger(t, cs, borderCol, activeBorderCol, loadCol, arrowCol),
-        _buildPanel(t, cs, divCol, loadCol, noResIconCol),
+        DropdownTriggerButton(
+          resolved: resolved,
+          isOpen: _isOpen,
+          enabled: widget.enabled,
+          semanticsLabel: widget.semanticsLabel,
+          showLoadingSpinner: widget.isLoading && widget.items.isEmpty,
+          onTap: _handleTriggerTap,
+          child: _buildTriggerContent(resolved),
+        ),
+        DropdownPanelShell(
+          resolved: resolved,
+          isOpen: _isOpen && widget.enabled,
+          children: [
+            DropdownSearchBar(
+              resolved: resolved,
+              controller: _searchController,
+              debouncedSearch: _debouncedSearch,
+              searchHint: widget.searchHint,
+              enabled: widget.enabled,
+              autofocus: widget.autofocusSearch,
+              minSearchLength: widget.minSearchLength,
+              onQueryChanged: _handleQueryChanged,
+            ),
+            Divider(height: 1, thickness: 1, color: resolved.dividerColor),
+            _buildResults(resolved),
+          ],
+        ),
       ],
     );
   }
 
-  Widget _buildTrigger(
-    DropdownPlusTheme t,
-    ColorScheme cs,
-    Color borderCol,
-    Color activeBorderCol,
-    Color loadCol,
-    Color arrowCol,
-  ) {
-    return GestureDetector(
-      onTap: () async {
-        final opening = !_isOpen;
-        setState(() => _isOpen = opening);
-        if (opening) {
-          final online = await _hasInternet();
-          if (widget.onSearch != null) {
-            if (online) {
-              _searchController.clear();
-              widget.onSearch!('');
-            } else if (_cache.isNotEmpty) {
-              setState(() => _items = _cache);
-            }
-          } else {
-            setState(() {
-              _items = List.from(widget.items);
-              _cache = List.from(widget.items);
-            });
-            if (_searchController.text.isNotEmpty) {
-              _localSearch(_searchController.text);
-            }
-          }
-        } else {
-          _searchController.clear();
-        }
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: t.contentPadding ??
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: t.backgroundColor ?? Colors.white,
-          borderRadius: BorderRadius.circular(t.borderRadius),
-          border: Border.all(
-            color: _isOpen ? activeBorderCol : borderCol,
-            width: _isOpen ? t.activeBorderWidth : t.borderWidth,
-          ),
-          boxShadow: _isOpen
-              ? [
-                  BoxShadow(
-                    color: activeBorderCol.withValues(alpha: 0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : [],
-        ),
-        child: Row(
-          children: [
-            Expanded(child: _buildTriggerContent(t, cs)),
-            if (widget.isLoading && widget.items.isEmpty) ...[
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(loadCol),
-                ),
-              ),
-              const SizedBox(width: 8),
-            ],
-            AnimatedRotation(
-              turns: _isOpen ? 0.5 : 0,
-              duration: const Duration(milliseconds: 200),
-              child: Icon(Icons.keyboard_arrow_down_rounded,
-                  color: arrowCol, size: t.arrowIconSize),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildTriggerContent(DropdownResolvedTheme resolved) {
+    final t = resolved.theme;
+    final cs = resolved.colorScheme;
 
-  Widget _buildTriggerContent(DropdownPlusTheme t, ColorScheme cs) {
     if (_selected == null) {
       return Text(
         widget.hintText,
         style: t.hintStyle ??
             TextStyle(
-                fontSize: 14,
-                color: cs.onSurface.withValues(alpha: 0.6),
-                fontWeight: FontWeight.w400),
+              fontSize: 14,
+              color: cs.onSurface.withValues(alpha: 0.6),
+              fontWeight: FontWeight.w400,
+            ),
       );
     }
     return widget.selectedValueBuilder?.call(_selected!) ??
@@ -275,221 +284,45 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
         );
   }
 
-  Widget _buildPanel(
-    DropdownPlusTheme t,
-    ColorScheme cs,
-    Color divCol,
-    Color loadCol,
-    Color noResIconCol,
-  ) {
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeInOut,
-      child: _isOpen
-          ? Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Material(
-                elevation: t.menuElevation,
-                shadowColor: Colors.black.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(t.menuBorderRadius),
-                color: t.menuBackgroundColor ?? Colors.white,
-                child: Container(
-                  constraints: BoxConstraints(maxHeight: t.menuMaxHeight),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(t.menuBorderRadius),
-                    border: Border.all(
-                      color: t.menuBorderColor ??
-                          cs.outline.withValues(alpha: 0.2),
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildSearchBar(t, cs),
-                      Divider(height: 1, thickness: 1, color: divCol),
-                      _buildResults(t, cs, divCol, loadCol, noResIconCol),
-                    ],
-                  ),
-                ),
-              ),
-            )
-          : const SizedBox.shrink(),
-    );
-  }
+  Widget _buildResults(DropdownResolvedTheme resolved) {
+    if (widget.error != null) {
+      return DropdownErrorState(
+        resolved: resolved,
+        error: widget.error!,
+        onRetry: _handleRetry,
+        errorBuilder: widget.errorBuilder,
+      );
+    }
 
-  Widget _buildSearchBar(DropdownPlusTheme t, ColorScheme cs) {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Container(
-        decoration: BoxDecoration(
-          color: t.searchBarBackgroundColor ??
-              cs.surfaceContainerHighest.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(t.searchBarBorderRadius),
-        ),
-        child: TextField(
-          controller: _searchController,
-          style: t.searchTextStyle,
-          decoration: InputDecoration(
-            hintText: widget.searchHint ?? 'Search…',
-            hintStyle: t.searchHintStyle ??
-                TextStyle(
-                    fontSize: 14,
-                    color: cs.onSurface.withValues(alpha: 0.5)),
-            prefixIcon: Icon(Icons.search_rounded,
-                size: 20,
-                color: t.searchIconColor ?? cs.onSurface.withValues(alpha: 0.5)),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(vertical: 12),
-          ),
-          onChanged: (value) {
-            _debouncedSearch(() async {
-              final online = await _hasInternet();
-              if (!mounted) return;
-              if (online && widget.onSearch != null) {
-                widget.onSearch!(value);
-              } else {
-                _localSearch(value);
-              }
-            });
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildResults(
-    DropdownPlusTheme t,
-    ColorScheme cs,
-    Color divCol,
-    Color loadCol,
-    Color noResIconCol,
-  ) {
     if (_items.isNotEmpty) {
-      return ConstrainedBox(
-        constraints:
-            BoxConstraints(maxHeight: dropdownListMaxHeight(t.menuMaxHeight)),
-        child: ListView.separated(
-          shrinkWrap: true,
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          itemCount: _items.length,
-          separatorBuilder: (_, __) => Divider(
-              height: 1,
-              thickness: 1,
-              indent: 12,
-              endIndent: 12,
-              color: divCol),
-          itemBuilder: (ctx, i) {
-            final item = _items[i];
-            final isSelected = _selected?.value == item.value;
-            return Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  setState(() {
-                    _selected = item;
-                    _isOpen = false;
-                  });
-                  widget.onSelectionChanged?.call(item);
-                  _searchController.clear();
-                },
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: t.itemPadding ??
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? (t.selectedItemBackgroundColor ??
-                            cs.primaryContainer.withValues(alpha: 0.3))
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: widget.itemBuilder?.call(item, isSelected) ??
-                      _defaultRow(t, cs, item, isSelected),
-                ),
-              ),
-            );
-          },
-        ),
+      return DropdownSingleSelectItemList(
+        resolved: resolved,
+        items: _items,
+        itemBuilder: widget.itemBuilder,
+        isItemSelected: (item) => _selected?.value == item.value,
+        onItemTap: (item) {
+          setState(() {
+            _selected = item;
+            _isOpen = false;
+          });
+          widget.onSelectionChanged?.call(item);
+          _searchController.clear();
+        },
       );
     }
 
     if (widget.isLoading) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                valueColor: AlwaysStoppedAnimation<Color>(loadCol),
-              ),
-            ),
-            if (widget.loadingText?.isNotEmpty == true)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text(
-                  widget.loadingText!,
-                  style: t.loadingTextStyle ??
-                      TextStyle(
-                          fontSize: 13,
-                          color: cs.onSurface.withValues(alpha: 0.6)),
-                ),
-              ),
-          ],
-        ),
+      return DropdownLoadingState(
+        resolved: resolved,
+        loadingText: widget.loadingText,
+        loadingBuilder: widget.loadingBuilder,
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.search_off_rounded, size: 24, color: noResIconCol),
-          if (widget.noResultsText?.isNotEmpty == true)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                widget.noResultsText!,
-                textAlign: TextAlign.center,
-                style: t.noResultsTextStyle ??
-                    TextStyle(
-                        fontSize: 13,
-                        color: cs.onSurface.withValues(alpha: 0.6)),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _defaultRow(
-    DropdownPlusTheme t,
-    ColorScheme cs,
-    DropdownItem<dynamic> item,
-    bool isSelected,
-  ) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            item.label,
-            style: isSelected
-                ? (t.selectedItemTextStyle ??
-                    TextStyle(
-                        fontSize: 14,
-                        color: cs.primary,
-                        fontWeight: FontWeight.w500))
-                : (t.itemTextStyle ??
-                    TextStyle(fontSize: 14, color: cs.onSurface)),
-          ),
-        ),
-        if (isSelected)
-          Icon(Icons.check_circle_rounded, size: 20, color: cs.primary),
-      ],
+    return DropdownEmptyState(
+      resolved: resolved,
+      noResultsText: widget.noResultsText,
+      emptyBuilder: widget.emptyBuilder,
     );
   }
 }

@@ -1,8 +1,13 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../internal/dropdown_internet.dart';
+import '../internal/dropdown_multi_select.dart';
+import '../internal/dropdown_panel.dart';
+import '../internal/dropdown_search_bar.dart';
+import '../internal/dropdown_states.dart';
+import '../internal/dropdown_theme_resolver.dart';
+import '../internal/dropdown_trigger.dart';
 import '../models/dropdown_item.dart';
 import '../models/dropdown_plus_theme.dart';
 import '../models/dropdown_plus_theme_style.dart';
@@ -67,6 +72,15 @@ class MultiSelectDropdownPlus<C extends BlocBase<S>, S>
     this.buttonWidth,
     this.checkInternetConnection,
     this.debounceDuration = Duration.zero,
+    this.enabled = true,
+    this.autofocusSearch = false,
+    this.emptyBuilder,
+    this.loadingBuilder,
+    this.error,
+    this.onRetry,
+    this.errorBuilder,
+    this.semanticsLabel,
+    this.minSearchLength = 0,
   });
 
   /// The BLoC/Cubit instance that drives this dropdown.
@@ -110,8 +124,6 @@ class MultiSelectDropdownPlus<C extends BlocBase<S>, S>
   final DropdownPlusTheme? dropdownTheme;
 
   /// Preset theme style. Ignored when [dropdownTheme] is non-null.
-  /// Use for out-of-the-box looks: [DropdownPlusThemeStyle.minimal],
-  /// [DropdownPlusThemeStyle.dark], etc.
   final DropdownPlusThemeStyle? themeStyle;
 
   /// Override item row rendering.
@@ -134,16 +146,20 @@ class MultiSelectDropdownPlus<C extends BlocBase<S>, S>
   /// Debounce delay before [onSearch] is invoked. Default: no debounce.
   final Duration debounceDuration;
 
+  final bool enabled;
+  final bool autofocusSearch;
+  final DropdownEmptyBuilder? emptyBuilder;
+  final DropdownLoadingBuilder? loadingBuilder;
+  final Object? error;
+  final VoidCallback? onRetry;
+  final DropdownErrorBuilder? errorBuilder;
+  final String? semanticsLabel;
+  final int minSearchLength;
+
   @override
   State<MultiSelectDropdownPlus<C, S>> createState() =>
       _MultiSelectDropdownPlusState<C, S>();
 }
-
-/// Conservative height for trigger + top gap so panel can stay within parent.
-const double _triggerAndGapEstimate = 70.0;
-
-/// Minimum panel height so the list area remains usable when space is tight.
-const double _minPanelHeight = 120.0;
 
 class _MultiSelectDropdownPlusState<C extends BlocBase<S>, S>
     extends State<MultiSelectDropdownPlus<C, S>> {
@@ -181,12 +197,6 @@ class _MultiSelectDropdownPlusState<C extends BlocBase<S>, S>
     _searchController.dispose();
     super.dispose();
   }
-
-  // ── Helpers ────────────────────────────────────────────────────────────────
-
-  Future<bool> _hasInternet() async => widget.checkInternetConnection == null
-      ? true
-      : await widget.checkInternetConnection!();
 
   void _localSearch(String query) {
     final q = query.toLowerCase().trim();
@@ -234,24 +244,52 @@ class _MultiSelectDropdownPlusState<C extends BlocBase<S>, S>
     widget.onSelectionChanged?.call([]);
   }
 
-  // ── Build ──────────────────────────────────────────────────────────────────
+  Future<void> _handleQueryChanged(String value) async {
+    final online = await dropdownHasInternet(widget.checkInternetConnection);
+    if (!mounted) return;
+    if (online) {
+      widget.onSearch(value);
+    } else {
+      _localSearch(value);
+    }
+  }
+
+  Future<void> _handleTriggerTap() async {
+    if (!widget.enabled) return;
+    final opening = !_isOpen;
+    setState(() => _isOpen = opening);
+    if (opening && _items.isEmpty) {
+      final online = await dropdownHasInternet(widget.checkInternetConnection);
+      if (online) {
+        widget.onSearch('');
+      } else if (_cache.isNotEmpty) {
+        setState(() => _items = _cache);
+      }
+    } else if (!opening) {
+      _searchController.clear();
+    }
+  }
+
+  void _closePanel() {
+    setState(() => _isOpen = false);
+    _searchController.clear();
+  }
+
+  void _handleRetry() {
+    if (widget.onRetry != null) {
+      widget.onRetry!();
+    } else {
+      widget.onSearch(_searchController.text);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final t = widget.dropdownTheme ??
-        (widget.themeStyle != null
-            ? DropdownPlusThemePresets.forStyle(widget.themeStyle!)
-            : null) ??
-        const DropdownPlusTheme();
-    final cs = Theme.of(context).colorScheme;
-
-    final borderCol = t.borderColor ?? cs.outline.withValues(alpha: 0.5);
-    final activeBorderCol = t.activeBorderColor ?? cs.primary;
-    final divCol = t.dividerColor ?? cs.outline.withValues(alpha: 0.1);
-    final loadCol = t.loadingIndicatorColor ?? cs.primary;
-    final arrowCol = _isOpen
-        ? activeBorderCol
-        : (t.arrowIconColor ?? cs.onSurface.withValues(alpha: 0.6));
+    final resolved = DropdownResolvedTheme.resolve(
+      context,
+      dropdownTheme: widget.dropdownTheme,
+      themeStyle: widget.themeStyle,
+    );
 
     return BlocProvider<C>.value(
       value: widget.cubit,
@@ -260,17 +298,59 @@ class _MultiSelectDropdownPlusState<C extends BlocBase<S>, S>
         listener: (_, state) => _onBlocState(state),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final panelMax = constraints.hasBoundedHeight
-                ? (constraints.maxHeight - _triggerAndGapEstimate)
-                    .clamp(_minPanelHeight, t.menuMaxHeight)
-                : t.menuMaxHeight;
+            final panelMax = resolveMultiSelectPanelMaxHeight(
+              constraints,
+              resolved.theme.menuMaxHeight,
+            );
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildTrigger(
-                    t, cs, borderCol, activeBorderCol, loadCol, arrowCol),
-                _buildPanel(t, cs, divCol, loadCol, panelMax),
+                DropdownTriggerButton(
+                  resolved: resolved,
+                  isOpen: _isOpen,
+                  enabled: widget.enabled,
+                  semanticsLabel: widget.semanticsLabel,
+                  width: widget.buttonWidth,
+                  height: widget.buttonHeight,
+                  showLoadingSpinner: _isLoading,
+                  onTap: _handleTriggerTap,
+                  child: _buildTriggerContent(resolved),
+                ),
+                DropdownPanelShell(
+                  resolved: resolved,
+                  isOpen: _isOpen && widget.enabled,
+                  maxHeight: panelMax,
+                  expandBody: true,
+                  children: [
+                    DropdownSearchBar(
+                      resolved: resolved,
+                      controller: _searchController,
+                      debouncedSearch: _debouncedSearch,
+                      searchHint: widget.searchHint,
+                      enabled: widget.enabled,
+                      autofocus: widget.autofocusSearch,
+                      minSearchLength: widget.minSearchLength,
+                      onQueryChanged: _handleQueryChanged,
+                    ),
+                    Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: resolved.dividerColor,
+                    ),
+                    DropdownMultiSelectHeader(
+                      resolved: resolved,
+                      itemCount: _items.length,
+                      selectedCount: _selected.length,
+                      allSelected:
+                          _items.isNotEmpty && _selected.length == _items.length,
+                      onSelectAll: _selectAll,
+                      onClearAll: _clearAll,
+                      onClose: _closePanel,
+                    ),
+                    _buildResults(resolved),
+                  ],
+                ),
               ],
             );
           },
@@ -279,468 +359,69 @@ class _MultiSelectDropdownPlusState<C extends BlocBase<S>, S>
     );
   }
 
-  // ── Trigger button ─────────────────────────────────────────────────────────
+  Widget _buildTriggerContent(DropdownResolvedTheme resolved) {
+    final t = resolved.theme;
+    final cs = resolved.colorScheme;
 
-  Widget _buildTrigger(
-    DropdownPlusTheme t,
-    ColorScheme cs,
-    Color borderCol,
-    Color activeBorderCol,
-    Color loadCol,
-    Color arrowCol,
-  ) {
-    return GestureDetector(
-      onTap: () async {
-        final opening = !_isOpen;
-        setState(() => _isOpen = opening);
-        if (opening && _items.isEmpty) {
-          final online = await _hasInternet();
-          if (online) {
-            widget.onSearch('');
-          } else if (_cache.isNotEmpty) {
-            setState(() => _items = _cache);
-          }
-        } else if (!opening) {
-          _searchController.clear();
-        }
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        width: widget.buttonWidth,
-        height: widget.buttonHeight,
-        padding: t.contentPadding ??
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: t.backgroundColor ?? Colors.white,
-          borderRadius: BorderRadius.circular(t.borderRadius),
-          border: Border.all(
-            color: _isOpen ? activeBorderCol : borderCol,
-            width: _isOpen ? t.activeBorderWidth : t.borderWidth,
-          ),
-          boxShadow: _isOpen
-              ? [
-                  BoxShadow(
-                    color: activeBorderCol.withValues(alpha: 0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : [],
-        ),
-        child: Row(
-          children: [
-            Expanded(child: _buildTriggerContent(t, cs)),
-            const SizedBox(width: 8),
-            if (_isLoading) ...[
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(loadCol),
-                ),
-              ),
-              const SizedBox(width: 4),
-            ],
-            AnimatedRotation(
-              turns: _isOpen ? 0.5 : 0,
-              duration: const Duration(milliseconds: 200),
-              child: Icon(Icons.keyboard_arrow_down_rounded,
-                  color: arrowCol, size: t.arrowIconSize),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTriggerContent(DropdownPlusTheme t, ColorScheme cs) {
     if (_selected.isEmpty) {
       return Text(
         widget.hintText,
         style: t.hintStyle ??
             TextStyle(
-                fontSize: 14,
-                color: cs.onSurface.withValues(alpha: 0.6),
-                fontWeight: FontWeight.w400),
+              fontSize: 14,
+              color: cs.onSurface.withValues(alpha: 0.6),
+              fontWeight: FontWeight.w400,
+            ),
       );
     }
-    return widget.selectedItemBuilder?.call(_selected) ?? _buildChipRow(t, cs);
-  }
-
-  // ── Dropdown panel ─────────────────────────────────────────────────────────
-
-  Widget _buildPanel(
-    DropdownPlusTheme t,
-    ColorScheme cs,
-    Color divCol,
-    Color loadCol,
-    double panelMaxHeight,
-  ) {
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeInOut,
-      child: _isOpen
-          ? Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Material(
-                elevation: t.menuElevation,
-                shadowColor: Colors.black.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(t.menuBorderRadius),
-                color: t.menuBackgroundColor ?? Colors.white,
-                child: Container(
-                  constraints: BoxConstraints(maxHeight: panelMaxHeight),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(t.menuBorderRadius),
-                    border: Border.all(
-                      color: t.menuBorderColor ?? cs.outline.withValues(alpha: 0.2),
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      _buildSearchBar(t, cs),
-                      Divider(height: 1, thickness: 1, color: divCol),
-                      _buildHeader(t, cs, divCol),
-                      Flexible(child: _buildResults(t, cs, divCol, loadCol)),
-                    ],
-                  ),
-                ),
-              ),
-            )
-          : const SizedBox.shrink(),
-    );
-  }
-
-  Widget _buildSearchBar(DropdownPlusTheme t, ColorScheme cs) {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Container(
-        decoration: BoxDecoration(
-          color: t.searchBarBackgroundColor ??
-              cs.surfaceContainerHighest.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(t.searchBarBorderRadius),
-        ),
-        child: TextField(
-          controller: _searchController,
-          style: t.searchTextStyle,
-          decoration: InputDecoration(
-            hintText: widget.searchHint ?? 'Search…',
-            hintStyle: t.searchHintStyle ??
-                TextStyle(fontSize: 14, color: cs.onSurface.withValues(alpha: 0.5)),
-            prefixIcon: Icon(Icons.search_rounded,
-                size: 20,
-                color: t.searchIconColor ?? cs.onSurface.withValues(alpha: 0.5)),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(vertical: 12),
-          ),
-          onChanged: (value) {
-            _debouncedSearch(() async {
-              final online = await _hasInternet();
-              if (!mounted) return;
-              if (online) {
-                widget.onSearch(value);
-              } else {
-                _localSearch(value);
-              }
-            });
+    return widget.selectedItemBuilder?.call(_selected) ??
+        DropdownChipRow(
+          resolved: resolved,
+          selected: _selected,
+          maxDisplayChips: widget.maxDisplayChips,
+          onRemove: (item) {
+            final updated = List<DropdownItem<dynamic>>.from(_selected)
+              ..removeWhere((s) => s.value == item.value);
+            setState(() => _selected = updated);
+            widget.onSelectionChanged?.call(updated);
           },
-        ),
-      ),
-    );
+        );
   }
 
-  Widget _buildHeader(DropdownPlusTheme t, ColorScheme cs, Color divCol) {
-    final allSelected = _items.isNotEmpty && _selected.length == _items.length;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: t.headerBackgroundColor ??
-            cs.surfaceContainerHighest.withValues(alpha: 0.3),
-        border: Border(
-          bottom: BorderSide(color: divCol),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          if (_items.isNotEmpty)
-            TextButton(
-              onPressed: allSelected ? _clearAll : _selectAll,
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Text(
-                allSelected ? 'Clear All' : 'Select All',
-                style: t.selectAllTextStyle ??
-                    TextStyle(
-                        fontSize: 13,
-                        color: cs.primary,
-                        fontWeight: FontWeight.w600),
-              ),
-            )
-          else
-            const SizedBox.shrink(),
-          Row(
-            children: [
-              if (_selected.isNotEmpty)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: t.selectedCountBackgroundColor ??
-                        cs.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${_selected.length} selected',
-                    style: t.selectedCountTextStyle ??
-                        TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: cs.primary),
-                  ),
-                ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () {
-                  setState(() => _isOpen = false);
-                  _searchController.clear();
-                },
-                child: Icon(Icons.close_rounded,
-                    size: 20, color: cs.onSurface.withValues(alpha: 0.6)),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildResults(
-    DropdownPlusTheme t,
-    ColorScheme cs,
-    Color divCol,
-    Color loadCol,
-  ) {
-    if (_items.isNotEmpty) {
-      return ListView.separated(
-        shrinkWrap: true,
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        itemCount: _items.length,
-        separatorBuilder: (_, __) => Divider(
-            height: 1, thickness: 1, color: divCol, indent: 16, endIndent: 16),
-        itemBuilder: (ctx, i) {
-          final item = _items[i];
-          final isSelected = _selected.any((s) => s.value == item.value);
-          return Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => _toggleItem(item),
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                padding: t.itemPadding ??
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? (t.selectedItemBackgroundColor ??
-                          cs.primaryContainer.withValues(alpha: 0.3))
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: widget.itemBuilder?.call(item, isSelected) ??
-                    _defaultRow(t, cs, item, isSelected),
-              ),
-            ),
-          );
-        },
+  Widget _buildResults(DropdownResolvedTheme resolved) {
+    if (widget.error != null) {
+      return DropdownErrorState(
+        resolved: resolved,
+        error: widget.error!,
+        onRetry: _handleRetry,
+        errorBuilder: widget.errorBuilder,
       );
     }
 
-    // Loading or empty state
-    return Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (_isLoading) ...[
-            SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                valueColor: AlwaysStoppedAnimation<Color>(loadCol),
-              ),
-            ),
-            if (widget.loadingText?.isNotEmpty == true) ...[
-              const SizedBox(height: 12),
-              Text(widget.loadingText!,
-                  style: t.loadingTextStyle ??
-                      TextStyle(
-                          fontSize: 13, color: cs.onSurface.withValues(alpha: 0.6))),
-            ],
-          ] else ...[
-            Icon(Icons.search_off_rounded,
-                size: 48,
-                color: t.noResultsIconColor ?? cs.onSurface.withValues(alpha: 0.4)),
-            const SizedBox(height: 12),
-            Text(
-              widget.noResultsText ?? 'No items found',
-              style: t.noResultsTextStyle ??
-                  TextStyle(
-                      fontSize: 14,
-                      color: cs.onSurface.withValues(alpha: 0.6),
-                      fontWeight: FontWeight.w500),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
+    if (_items.isNotEmpty) {
+      return DropdownMultiSelectItemList(
+        resolved: resolved,
+        items: _items,
+        itemBuilder: widget.itemBuilder,
+        isItemSelected: (item) =>
+            _selected.any((s) => s.value == item.value),
+        onItemTap: _toggleItem,
+      );
+    }
 
-  // ── Chip display ───────────────────────────────────────────────────────────
+    if (_isLoading) {
+      return DropdownLoadingState(
+        resolved: resolved,
+        loadingText: widget.loadingText,
+        loadingBuilder: widget.loadingBuilder,
+      );
+    }
 
-  Widget _buildChipRow(DropdownPlusTheme t, ColorScheme cs) {
-    final visible = _selected.length <= widget.maxDisplayChips
-        ? _selected
-        : _selected.take(widget.maxDisplayChips).toList();
-    final overflow = _selected.length - widget.maxDisplayChips;
-
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: [
-        ...visible.map((item) => _chip(
-              t,
-              cs,
-              label: item.label,
-              onDelete: () {
-                final updated = List<DropdownItem<dynamic>>.from(_selected)
-                  ..removeWhere((s) => s.value == item.value);
-                setState(() => _selected = updated);
-                widget.onSelectionChanged?.call(updated);
-              },
-            )),
-        if (overflow > 0) _chip(t, cs, label: '+$overflow more', isCount: true),
-      ],
-    );
-  }
-
-  Widget _chip(
-    DropdownPlusTheme t,
-    ColorScheme cs, {
-    required String label,
-    VoidCallback? onDelete,
-    bool isCount = false,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: isCount
-            ? (t.countChipBackgroundColor ?? cs.surfaceContainerHighest)
-            : (t.chipBackgroundColor ?? cs.primary.withValues(alpha: 0.1)),
-        borderRadius: BorderRadius.circular(t.chipBorderRadius),
-        border: Border.all(
-          color: isCount
-              ? (t.chipBorderColor ?? cs.outline.withValues(alpha: 0.3))
-              : (t.chipBorderColor ?? cs.primary.withValues(alpha: 0.3)),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(
-            child: Text(
-              label,
-              style: isCount
-                  ? (t.countChipTextStyle ??
-                      TextStyle(
-                          fontSize: 12,
-                          color: cs.onSurface.withValues(alpha: 0.7),
-                          fontWeight: FontWeight.w500))
-                  : (t.chipTextStyle ??
-                      TextStyle(
-                          fontSize: 12,
-                          color: cs.primary,
-                          fontWeight: FontWeight.w500)),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (onDelete != null) ...[
-            const SizedBox(width: 6),
-            GestureDetector(
-              onTap: onDelete,
-              child: Container(
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  color: (t.chipDeleteIconColor ?? cs.primary).withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.close_rounded,
-                  size: t.chipDeleteIconSize,
-                  color: t.chipDeleteIconColor ?? cs.primary,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  // ── Default item row ───────────────────────────────────────────────────────
-
-  Widget _defaultRow(
-    DropdownPlusTheme t,
-    ColorScheme cs,
-    DropdownItem<dynamic> item,
-    bool isSelected,
-  ) {
-    final activeCol = t.checkboxActiveColor ?? cs.primary;
-    final inactiveCol = t.checkboxBorderColor ?? cs.outline.withValues(alpha: 0.4);
-
-    return Row(
-      children: [
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          width: t.checkboxSize,
-          height: t.checkboxSize,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: isSelected ? activeCol : inactiveCol,
-              width: 2,
-            ),
-            color: isSelected ? activeCol : Colors.transparent,
-          ),
-          child: isSelected
-              ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
-              : null,
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Text(
-            item.label,
-            style: isSelected
-                ? (t.selectedItemTextStyle ??
-                    TextStyle(
-                        fontSize: 14,
-                        color: cs.onSurface,
-                        fontWeight: FontWeight.w600))
-                : (t.itemTextStyle ??
-                    TextStyle(
-                        fontSize: 14,
-                        color: cs.onSurface,
-                        fontWeight: FontWeight.w400)),
-          ),
-        ),
-      ],
+    return DropdownEmptyState(
+      resolved: resolved,
+      noResultsText: widget.noResultsText ?? 'No items found',
+      emptyBuilder: widget.emptyBuilder,
+      compact: true,
     );
   }
 }
