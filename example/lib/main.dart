@@ -1,13 +1,12 @@
-/// This example shows dropdown_plus with BLoC (`*Plus` widgets) and without
-/// (`SearchableDropdown` / `MultiSelectDropdown`).
+/// Example for dropdown_plus_bloc: legacy [DropdownItem] API, typed API, and forms.
 ///
 /// Run with: flutter run
 library;
 
+import 'package:dropdown_plus_bloc/dropdown_plus_bloc.dart';
+import 'package:dropdown_plus_bloc/typed.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import 'package:dropdown_plus_bloc/dropdown_plus_bloc.dart';
 
 // ── Data model ────────────────────────────────────────────────────────────────
 
@@ -16,6 +15,14 @@ class User {
   final int id;
   final String name;
   final String role;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is User && id == other.id && name == other.name && role == other.role;
+
+  @override
+  int get hashCode => Object.hash(id, name, role);
 }
 
 const List<User> kDemoUsers = [
@@ -26,14 +33,10 @@ const List<User> kDemoUsers = [
   User(id: 5, name: 'Eve Davis', role: 'DevOps'),
 ];
 
-List<DropdownItem<dynamic>> _usersToItems(List<User> users) => users
-    .map(
-      (u) => DropdownItem<User>(
-        value: u,
-        label: '${u.name} · ${u.role}',
-      ),
-    )
-    .toList();
+String _userLabel(User u) => '${u.name} · ${u.role}';
+
+List<DropdownItem<dynamic>> _usersToItems(List<User> users) =>
+    users.map((u) => DropdownItem<User>(value: u, label: _userLabel(u))).toList();
 
 // ── Cubit ─────────────────────────────────────────────────────────────────────
 
@@ -53,7 +56,7 @@ class UsersCubit extends Cubit<UsersState> {
 
   Future<void> search(String query) async {
     emit(UsersLoading());
-    await Future.delayed(const Duration(milliseconds: 400)); // simulate API
+    await Future.delayed(const Duration(milliseconds: 400));
     final results = query.isEmpty
         ? kDemoUsers
         : kDemoUsers
@@ -64,6 +67,32 @@ class UsersCubit extends Cubit<UsersState> {
             )
             .toList();
     emit(UsersLoaded(results));
+  }
+}
+
+void _legacyStateHandler(
+  UsersState state,
+  void Function(List<DropdownItem<dynamic>>) updateList,
+  void Function(bool) updateLoading,
+) {
+  if (state is UsersLoaded) {
+    updateList(_usersToItems(state.users));
+    updateLoading(false);
+  } else if (state is UsersLoading) {
+    updateLoading(true);
+  }
+}
+
+void _typedStateHandler(
+  UsersState state,
+  void Function(List<User>) updateItems,
+  void Function(bool) updateLoading,
+) {
+  if (state is UsersLoaded) {
+    updateItems(state.users);
+    updateLoading(false);
+  } else if (state is UsersLoading) {
+    updateLoading(true);
   }
 }
 
@@ -97,31 +126,21 @@ class ExamplePage extends StatefulWidget {
 class _ExamplePageState extends State<ExamplePage> {
   final _singleCubit = UsersCubit();
   final _multiCubit = UsersCubit();
+  final _typedCubit = UsersCubit();
+  final _formKey = GlobalKey<FormState>();
 
   DropdownItem<User>? _selected;
   List<DropdownItem<User>> _multiSelected = [];
+  User? _typedSelected;
+  User? _formSavedUser;
 
-  // Plain (no BLoC) — local list for single-select demo
   late List<DropdownItem<dynamic>> _plainLocalItems;
   DropdownItem<dynamic>? _plainLocalSelected;
+  User? _typedPlainSelected;
 
-  // Plain — remote-style search for multi-select demo
   List<DropdownItem<dynamic>> _plainRemoteItems = _usersToItems(kDemoUsers);
   bool _plainRemoteLoading = false;
   List<DropdownItem<dynamic>> _plainRemoteSelected = [];
-
-  void Function(
-    UsersState,
-    void Function(List<DropdownItem<dynamic>>),
-    void Function(bool),
-  ) get _stateHandler => (state, updateList, updateLoading) {
-        if (state is UsersLoaded) {
-          updateList(_usersToItems(state.users));
-          updateLoading(false);
-        } else if (state is UsersLoading) {
-          updateLoading(true);
-        }
-      };
 
   @override
   void initState() {
@@ -129,12 +148,14 @@ class _ExamplePageState extends State<ExamplePage> {
     _plainLocalItems = _usersToItems(kDemoUsers);
     _singleCubit.search('');
     _multiCubit.search('');
+    _typedCubit.search('');
   }
 
   @override
   void dispose() {
     _singleCubit.close();
     _multiCubit.close();
+    _typedCubit.close();
     super.dispose();
   }
 
@@ -158,6 +179,15 @@ class _ExamplePageState extends State<ExamplePage> {
     }
   }
 
+  void _submitForm() {
+    if (_formKey.currentState?.validate() ?? false) {
+      _formKey.currentState!.save();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Saved: ${_formSavedUser?.name ?? 'none'}')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -167,11 +197,7 @@ class _ExamplePageState extends State<ExamplePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'BLoC — single select',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 8),
+            _sectionTitle('BLoC — single select (legacy)'),
             SearchableDropdownPlus<UsersCubit, UsersState>(
               cubit: _singleCubit,
               hintText: 'Search and select a user…',
@@ -181,24 +207,65 @@ class _ExamplePageState extends State<ExamplePage> {
               onSearch: _singleCubit.search,
               debounceDuration: const Duration(milliseconds: 400),
               themeStyle: DropdownPlusThemeStyle.dark,
-              onStateChange: _stateHandler,
+              onStateChange: _legacyStateHandler,
               onSelectionChanged: (item) =>
                   setState(() => _selected = item as DropdownItem<User>),
             ),
             if (_selected != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  'Selected: ${_selected!.label}',
-                  style: const TextStyle(color: Colors.green),
-                ),
-              ),
+              _selectionNote('Selected: ${_selected!.label}', Colors.green),
             const SizedBox(height: 32),
+            _sectionTitle('Typed API — BLoC single select'),
             const Text(
-              'BLoC — multi select',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              'import package:dropdown_plus_bloc/typed.dart',
+              style: TextStyle(fontSize: 12, fontFamily: 'monospace'),
             ),
             const SizedBox(height: 8),
+            TypedSearchableDropdownPlus<User, UsersCubit, UsersState>(
+              cubit: _typedCubit,
+              hintText: 'Select a user (typed)…',
+              itemLabel: _userLabel,
+              itemEquals: (a, b) => a.id == b.id,
+              value: _typedSelected,
+              onChanged: (user) => setState(() => _typedSelected = user),
+              onSearch: _typedCubit.search,
+              debounceDuration: const Duration(milliseconds: 400),
+              themeStyle: DropdownPlusThemeStyle.dark,
+              onStateChange: _typedStateHandler,
+            ),
+            if (_typedSelected != null)
+              _selectionNote(
+                'Typed selected: ${_userLabel(_typedSelected!)}',
+                Colors.deepPurple,
+              ),
+            const SizedBox(height: 32),
+            _sectionTitle('Form — SearchableDropdownFormField'),
+            Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SearchableDropdownFormField(
+                    hintText: 'Required: pick a user…',
+                    items: _usersToItems(kDemoUsers),
+                    isLoading: false,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    validator: (value) =>
+                        value == null ? 'Please select a user' : null,
+                    onSaved: (value) =>
+                        _formSavedUser = value?.value as User?,
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton(
+                    onPressed: _submitForm,
+                    child: const Text('Save form'),
+                  ),
+                ],
+              ),
+            ),
+            if (_formSavedUser != null)
+              _selectionNote('Last saved: ${_userLabel(_formSavedUser!)}', null),
+            const SizedBox(height: 32),
+            _sectionTitle('BLoC — multi select (legacy)'),
             MultiSelectDropdownPlus<UsersCubit, UsersState>(
               cubit: _multiCubit,
               hintText: 'Select users…',
@@ -207,7 +274,7 @@ class _ExamplePageState extends State<ExamplePage> {
               maxDisplayChips: 3,
               selectedItems: _multiSelected,
               onSearch: _multiCubit.search,
-              onStateChange: _stateHandler,
+              onStateChange: _legacyStateHandler,
               onSelectionChanged: (items) => setState(
                 () => _multiSelected = items.cast<DropdownItem<User>>(),
               ),
@@ -216,37 +283,38 @@ class _ExamplePageState extends State<ExamplePage> {
                 checkboxActiveColor: Colors.teal,
                 chipBackgroundColor: Colors.teal.withValues(alpha: 0.1),
                 chipTextStyle: const TextStyle(
-                    color: Colors.teal, fontWeight: FontWeight.w600),
+                  color: Colors.teal,
+                  fontWeight: FontWeight.w600,
+                ),
                 chipBorderColor: Colors.teal.withValues(alpha: 0.4),
                 selectedItemTextStyle: const TextStyle(
-                    color: Colors.teal, fontWeight: FontWeight.bold),
+                  color: Colors.teal,
+                  fontWeight: FontWeight.bold,
+                ),
                 selectedItemBackgroundColor:
                     Colors.teal.withValues(alpha: 0.08),
                 loadingIndicatorColor: Colors.teal,
                 selectAllTextStyle: const TextStyle(
-                    color: Colors.teal, fontWeight: FontWeight.bold),
+                  color: Colors.teal,
+                  fontWeight: FontWeight.bold,
+                ),
                 selectedCountBackgroundColor:
                     Colors.teal.withValues(alpha: 0.15),
                 selectedCountTextStyle: const TextStyle(
-                    color: Colors.teal, fontWeight: FontWeight.w600),
+                  color: Colors.teal,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             if (_multiSelected.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  'Selected: ${_multiSelected.map((e) => e.label).join(', ')}',
-                  style: const TextStyle(color: Colors.teal),
-                ),
+              _selectionNote(
+                'Selected: ${_multiSelected.map((e) => e.label).join(', ')}',
+                Colors.teal,
               ),
             const SizedBox(height: 32),
             const Divider(),
             const SizedBox(height: 16),
-            const Text(
-              'Without BLoC — single select (local search only)',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 8),
+            _sectionTitle('Without BLoC — single select (legacy)'),
             SearchableDropdown(
               hintText: 'Pick a user (filters this list locally)…',
               items: _plainLocalItems,
@@ -257,19 +325,28 @@ class _ExamplePageState extends State<ExamplePage> {
                   setState(() => _plainLocalSelected = item),
             ),
             if (_plainLocalSelected != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  'Plain selected: ${_plainLocalSelected!.label}',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
+              _selectionNote(
+                'Plain selected: ${_plainLocalSelected!.label}',
+                null,
               ),
             const SizedBox(height: 32),
-            const Text(
-              'Without BLoC — multi select (simulated remote search)',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            _sectionTitle('Typed API — without BLoC'),
+            TypedSearchableDropdown<User>(
+              hintText: 'Pick a user (typed, local list)…',
+              items: kDemoUsers,
+              isLoading: false,
+              itemLabel: _userLabel,
+              value: _typedPlainSelected,
+              onChanged: (user) => setState(() => _typedPlainSelected = user),
+              themeStyle: DropdownPlusThemeStyle.minimal,
             ),
-            const SizedBox(height: 8),
+            if (_typedPlainSelected != null)
+              _selectionNote(
+                'Typed plain: ${_userLabel(_typedPlainSelected!)}',
+                null,
+              ),
+            const SizedBox(height: 32),
+            _sectionTitle('Without BLoC — multi select (remote search)'),
             MultiSelectDropdown(
               hintText: 'Select users…',
               items: _plainRemoteItems,
@@ -285,16 +362,29 @@ class _ExamplePageState extends State<ExamplePage> {
                   setState(() => _plainRemoteSelected = items),
             ),
             if (_plainRemoteSelected.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  'Plain multi: ${_plainRemoteSelected.map((e) => e.label).join(', ')}',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
+              _selectionNote(
+                'Plain multi: ${_plainRemoteSelected.map((e) => e.label).join(', ')}',
+                null,
               ),
           ],
         ),
       ),
     );
   }
+
+  Widget _sectionTitle(String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(
+          text,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+      );
+
+  Widget _selectionNote(String text, Color? color) => Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Text(
+          text,
+          style: TextStyle(color: color),
+        ),
+      );
 }

@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-06-30
+
+### Added
+- **Typed API (preview)** — opt-in via `package:dropdown_plus_bloc/typed.dart`:
+  - `TypedSearchableDropdownPlus<T, C, S>`
+  - `TypedMultiSelectDropdownPlus<T, C, S>`
+  - `TypedSearchableDropdown<T>`
+  - `TypedMultiSelectDropdown<T>`
+- `TypedDropdownAdapter`, `ItemLabel`, `ItemEquals`, typed builders.
+- `List<T>.toDropdownItems()` extension for legacy bridge.
+- `doc/TYPED_API.md` and tests in `test/typed/`.
+- Example app demos typed API, form fields, and legacy widgets side by side.
+
+**No breaking changes** to `dropdown_plus_bloc.dart` default export.
+
 ## [1.1.1] - 2026-06-30
 
 ### Added
