@@ -15,6 +15,8 @@ A highly customisable Flutter dropdown package with optional **BLoC / Cubit** in
 > **Upgrading from 0.1.x?** See [doc/UPGRADING_TO_1.0.md](doc/UPGRADING_TO_1.0.md) — no code changes required.
 >
 > **What's next?** See [doc/ROADMAP.md](doc/ROADMAP.md) for the post-1.0 plan (typed API, form fields, enhancements).
+>
+> **Upgrading to 1.1?** See [doc/UPGRADING_TO_1.1.md](doc/UPGRADING_TO_1.1.md) — optional `enabled`, builders, `errorBuilder`, and more.
 
 ---
 

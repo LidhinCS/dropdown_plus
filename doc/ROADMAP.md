@@ -375,7 +375,7 @@ Resolve before implementation:
 | Phase | Status | Version |
 |-------|--------|---------|
 | 1.0 stable release | **Done** | `1.0.0` |
-| Phase 0 — Foundation | Not started | `1.1.0` |
+| Phase 0 — Foundation | **Done** | `1.1.0` |
 | Phase 1 — Form fields | Not started | `1.1.x` |
 | Phase 2 — Typed API | Not started | `1.2.0` |
 | Phase 3 — Scale / a11y | Not started | `1.3.0` |
