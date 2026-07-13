@@ -5,6 +5,8 @@
 /// - [MultiSelectDropdownPlus]: multi-select with chips and BLoC/Cubit.
 /// - [SearchableDropdown]: same single-select UI without BLoC (pass [items] / [isLoading]).
 /// - [MultiSelectDropdown]: same multi-select UI without BLoC (pass [items] / [isLoading]).
+/// - [SearchableDropdownFormField] / [MultiSelectDropdownFormField]: [FormField] wrappers.
+/// - [SearchableDropdownPlusFormField] / [MultiSelectDropdownPlusFormField]: BLoC form wrappers.
 ///
 /// ## Quick Start
 ///
@@ -56,6 +58,10 @@ export 'src/models/dropdown_plus_theme_style.dart';
 export 'src/internal/dropdown_states.dart'
     show DropdownEmptyBuilder, DropdownErrorBuilder, DropdownLoadingBuilder;
 export 'src/widgets/multi_select_dropdown.dart';
+export 'src/widgets/multi_select_dropdown_form_field.dart';
 export 'src/widgets/multi_select_dropdown_plus.dart';
+export 'src/widgets/multi_select_dropdown_plus_form_field.dart';
 export 'src/widgets/searchable_dropdown.dart';
+export 'src/widgets/searchable_dropdown_form_field.dart';
 export 'src/widgets/searchable_dropdown_plus.dart';
+export 'src/widgets/searchable_dropdown_plus_form_field.dart';
