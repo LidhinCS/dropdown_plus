@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/dropdown_item.dart';
 import '../models/dropdown_plus_theme.dart';
 import '../models/dropdown_plus_theme_style.dart';
+import '../utils/debounced_callback.dart';
 
 /// Multi-select searchable dropdown **without** BLoC/Cubit.
 ///
@@ -30,6 +31,7 @@ class MultiSelectDropdown extends StatefulWidget {
     this.buttonHeight,
     this.buttonWidth,
     this.checkInternetConnection,
+    this.debounceDuration = Duration.zero,
   });
 
   final List<DropdownItem<dynamic>> items;
@@ -66,6 +68,9 @@ class MultiSelectDropdown extends StatefulWidget {
 
   final Future<bool> Function()? checkInternetConnection;
 
+  /// Debounce delay before [onSearch] is invoked. Default: no debounce.
+  final Duration debounceDuration;
+
   @override
   State<MultiSelectDropdown> createState() => _MultiSelectDropdownState();
 }
@@ -79,10 +84,12 @@ class _MultiSelectDropdownState extends State<MultiSelectDropdown> {
   bool _isOpen = false;
   late List<DropdownItem<dynamic>> _selected;
   final TextEditingController _searchController = TextEditingController();
+  late DebouncedCallback _debouncedSearch;
 
   @override
   void initState() {
     super.initState();
+    _debouncedSearch = DebouncedCallback(duration: widget.debounceDuration);
     _selected = List.from(widget.selectedItems);
     _items = List.from(widget.items);
     _cache = List.from(widget.items);
@@ -94,6 +101,10 @@ class _MultiSelectDropdownState extends State<MultiSelectDropdown> {
   @override
   void didUpdateWidget(MultiSelectDropdown oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.debounceDuration != widget.debounceDuration) {
+      _debouncedSearch.dispose();
+      _debouncedSearch = DebouncedCallback(duration: widget.debounceDuration);
+    }
     if (oldWidget.selectedItems != widget.selectedItems) {
       setState(() => _selected = List.from(widget.selectedItems));
     }
@@ -113,6 +124,7 @@ class _MultiSelectDropdownState extends State<MultiSelectDropdown> {
 
   @override
   void dispose() {
+    _debouncedSearch.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -352,13 +364,16 @@ class _MultiSelectDropdownState extends State<MultiSelectDropdown> {
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(vertical: 12),
           ),
-          onChanged: (value) async {
-            final online = await _hasInternet();
-            if (online && widget.onSearch != null) {
-              widget.onSearch!(value);
-            } else {
-              _localSearch(value);
-            }
+          onChanged: (value) {
+            _debouncedSearch(() async {
+              final online = await _hasInternet();
+              if (!mounted) return;
+              if (online && widget.onSearch != null) {
+                widget.onSearch!(value);
+              } else {
+                _localSearch(value);
+              }
+            });
           },
         ),
       ),

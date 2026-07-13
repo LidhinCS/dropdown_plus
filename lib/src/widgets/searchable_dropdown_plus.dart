@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../models/dropdown_item.dart';
 import '../models/dropdown_plus_theme.dart';
 import '../models/dropdown_plus_theme_style.dart';
+import '../utils/debounced_callback.dart';
 
 /// A single-select searchable dropdown that integrates with any BLoC/Cubit.
 ///
@@ -65,6 +68,7 @@ class SearchableDropdownPlus<C extends BlocBase<S>, S>
     this.itemBuilder,
     this.selectedValueBuilder,
     this.checkInternetConnection,
+    this.debounceDuration = Duration.zero,
   });
 
   /// The BLoC/Cubit instance that drives this dropdown.
@@ -141,6 +145,9 @@ class SearchableDropdownPlus<C extends BlocBase<S>, S>
   /// ```
   final Future<bool> Function()? checkInternetConnection;
 
+  /// Debounce delay before [onSearch] is invoked. Default: no debounce.
+  final Duration debounceDuration;
+
   @override
   State<SearchableDropdownPlus<C, S>> createState() =>
       _SearchableDropdownPlusState<C, S>();
@@ -154,10 +161,12 @@ class _SearchableDropdownPlusState<C extends BlocBase<S>, S>
   bool _isOpen = false;
   DropdownItem<dynamic>? _selected;
   final TextEditingController _searchController = TextEditingController();
+  late DebouncedCallback _debouncedSearch;
 
   @override
   void initState() {
     super.initState();
+    _debouncedSearch = DebouncedCallback(duration: widget.debounceDuration);
     _selected = widget.selectedValue;
     if (widget.needInitialFetch) widget.onSearch('');
   }
@@ -165,6 +174,10 @@ class _SearchableDropdownPlusState<C extends BlocBase<S>, S>
   @override
   void didUpdateWidget(SearchableDropdownPlus<C, S> oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.debounceDuration != widget.debounceDuration) {
+      _debouncedSearch.dispose();
+      _debouncedSearch = DebouncedCallback(duration: widget.debounceDuration);
+    }
     if (oldWidget.selectedValue != widget.selectedValue) {
       setState(() => _selected = widget.selectedValue);
     }
@@ -172,6 +185,7 @@ class _SearchableDropdownPlusState<C extends BlocBase<S>, S>
 
   @override
   void dispose() {
+    _debouncedSearch.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -229,8 +243,8 @@ class _SearchableDropdownPlusState<C extends BlocBase<S>, S>
         ? activeBorderCol
         : (t.arrowIconColor ?? cs.onSurface.withValues(alpha: 0.6));
 
-    return BlocProvider<C>(
-      create: (_) => widget.cubit,
+    return BlocProvider<C>.value(
+      value: widget.cubit,
       child: BlocListener<C, S>(
         bloc: widget.cubit,
         listener: (_, state) => _onBlocState(state),
@@ -406,9 +420,16 @@ class _SearchableDropdownPlusState<C extends BlocBase<S>, S>
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(vertical: 12),
           ),
-          onChanged: (value) async {
-            final online = await _hasInternet();
-            online ? widget.onSearch(value) : _localSearch(value);
+          onChanged: (value) {
+            _debouncedSearch(() async {
+              final online = await _hasInternet();
+              if (!mounted) return;
+              if (online) {
+                widget.onSearch(value);
+              } else {
+                _localSearch(value);
+              }
+            });
           },
         ),
       ),
@@ -424,7 +445,8 @@ class _SearchableDropdownPlusState<C extends BlocBase<S>, S>
   ) {
     if (_items.isNotEmpty) {
       return ConstrainedBox(
-        constraints: const BoxConstraints(maxHeight: 200),
+        constraints:
+            BoxConstraints(maxHeight: dropdownListMaxHeight(t.menuMaxHeight)),
         child: ListView.separated(
           shrinkWrap: true,
           padding: const EdgeInsets.symmetric(vertical: 4),

@@ -1,6 +1,6 @@
 # dropdown_plus
 
-[![pub package](https://img.shields.io/pub/v/dropdown_plus.svg)](https://pub.dev/packages/dropdown_plus)
+[![pub package](https://img.shields.io/pub/v/dropdown_plus_bloc.svg)](https://pub.dev/packages/dropdown_plus_bloc)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A highly customisable Flutter dropdown package with optional **BLoC / Cubit** integration. Use `*Plus` widgets with a cubit, or plain widgets with your own state.
@@ -12,6 +12,8 @@ A highly customisable Flutter dropdown package with optional **BLoC / Cubit** in
 | `SearchableDropdown` | Single-select searchable dropdown (no BLoC — pass `items` / `isLoading`) |
 | `MultiSelectDropdown` | Multi-select with chips (no BLoC — pass `items` / `isLoading`) |
 
+> **Upgrading from 0.1.x?** See [doc/UPGRADING_TO_1.0.md](doc/UPGRADING_TO_1.0.md) — no code changes required.
+
 ---
 
 ## Features
@@ -19,6 +21,7 @@ A highly customisable Flutter dropdown package with optional **BLoC / Cubit** in
 - 🔌 **BLoC / Cubit integration** — `SearchableDropdownPlus` / `MultiSelectDropdownPlus` wire to any `Cubit` or `Bloc`
 - 📦 **Plain StatefulWidget API** — `SearchableDropdown` / `MultiSelectDropdown` work with `setState`, Provider, Riverpod, etc.
 - 🔍 **Real-time search** — calls your cubit's search method as the user types
+- ⏱ **Optional debounce** — `debounceDuration` on all widgets (default: immediate)
 - 📴 **Offline caching** — falls back to client-side filtering when no internet is available
 - 🎨 **Preset + custom theming** — use `themeStyle` for out-of-the-box looks or `DropdownPlusTheme` for full control
 - 🧩 **Custom builders** — override item rows, chip display, and the trigger button content
@@ -46,9 +49,10 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  dropdown_plus: ^0.1.0
-  flutter_bloc: ">=8.0.0 <10.0.0"   # only transitive dep needed
+  dropdown_plus_bloc: ^1.0.0
 ```
+
+`flutter_bloc` is included as a transitive dependency for `*Plus` widgets.
 
 Then run:
 
@@ -61,7 +65,7 @@ flutter pub get
 ## Quick Start
 
 ```dart
-import 'package:dropdown_plus/dropdown_plus.dart';
+import 'package:dropdown_plus_bloc/dropdown_plus_bloc.dart';
 ```
 
 ### Single Select
@@ -350,6 +354,7 @@ dropdownTheme: DropdownPlusTheme(
 | `noResultsText` | `String?` | — | Empty-state message |
 | `loadingText` | `String?` | — | Loading-state message |
 | `needInitialFetch` | `bool` | — | Trigger search on mount (default: `false`) |
+| `debounceDuration` | `Duration` | `Duration.zero` | Debounce delay before `onSearch` |
 | `dropdownTheme` | `DropdownPlusTheme?` | — | Visual customisation |
 | `themeStyle` | `DropdownPlusThemeStyle?` | — | Preset style (ignored when `dropdownTheme` is set) |
 | `itemBuilder` | `Widget Function(item, isSelected)?` | — | Custom item row |
@@ -383,6 +388,7 @@ All parameters from `SearchableDropdownPlus` plus:
 | `noResultsText` | `String?` | — | Empty state text |
 | `loadingText` | `String?` | — | Loading message |
 | `needInitialFetch` | `bool` | — | If `true` and `onSearch` is set, calls `onSearch('')` on mount |
+| `debounceDuration` | `Duration` | `Duration.zero` | Debounce delay before `onSearch` |
 | `dropdownTheme` | `DropdownPlusTheme?` | — | Theme overrides |
 | `themeStyle` | `DropdownPlusThemeStyle?` | — | Preset style |
 | `itemBuilder` | `Widget Function(item, isSelected)?` | — | Custom row |

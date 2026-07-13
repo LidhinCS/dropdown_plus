@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-06-30
+
+### Fixed
+- **Critical:** `SearchableDropdownPlus` and `MultiSelectDropdownPlus` no longer close a parent-owned cubit on dispose (`BlocProvider.value` instead of `BlocProvider(create:)`).
+- Single-select item lists now respect `DropdownPlusTheme.menuMaxHeight` instead of a hardcoded 200px height.
+
+### Added
+- Optional `debounceDuration` on all four dropdown widgets (default `Duration.zero` — no behaviour change unless set).
+- Package widget tests and `doc/UPGRADING_TO_1.0.md`.
+
+### Docs
+- README uses correct `dropdown_plus_bloc` package/import names.
+- Example disposes cubits in `dispose()`.
+
+**No breaking API changes** — upgrade from 0.1.x without code modifications.
+
 ## [0.1.6] - 2026-03-15
 
 ### Added

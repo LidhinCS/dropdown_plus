@@ -1,6 +1,6 @@
 name: dropdown_plus_bloc
 description: "Customizable Flutter dropdowns with BLoC/Cubit integration: searchable single-select and multi-select with chips, offline caching, and theming."
-version: 0.1.6
+version: 1.0.0
 homepage: https://github.com/LidhinCS/dropdown_plus
 repository: https://github.com/LidhinCS/dropdown_plus
 issue_tracker: https://github.com/LidhinCS/dropdown_plus/issues

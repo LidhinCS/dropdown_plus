@@ -9,7 +9,7 @@
 /// ## Quick Start
 ///
 /// ```dart
-/// import 'package:dropdown_plus/dropdown_plus.dart';
+/// import 'package:dropdown_plus_bloc/dropdown_plus_bloc.dart';
 /// ```
 ///
 /// ### Single Select

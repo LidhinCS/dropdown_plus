@@ -131,6 +131,13 @@ class _ExamplePageState extends State<ExamplePage> {
     _multiCubit.search('');
   }
 
+  @override
+  void dispose() {
+    _singleCubit.close();
+    _multiCubit.close();
+    super.dispose();
+  }
+
   Future<void> _plainRemoteSearch(String query) async {
     setState(() => _plainRemoteLoading = true);
     try {
@@ -172,6 +179,7 @@ class _ExamplePageState extends State<ExamplePage> {
               noResultsText: 'No users found',
               loadingText: 'Loading…',
               onSearch: _singleCubit.search,
+              debounceDuration: const Duration(milliseconds: 400),
               themeStyle: DropdownPlusThemeStyle.dark,
               onStateChange: _stateHandler,
               onSelectionChanged: (item) =>
@@ -185,9 +193,7 @@ class _ExamplePageState extends State<ExamplePage> {
                   style: const TextStyle(color: Colors.green),
                 ),
               ),
-
             const SizedBox(height: 32),
-
             const Text(
               'BLoC — multi select',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -233,11 +239,9 @@ class _ExamplePageState extends State<ExamplePage> {
                   style: const TextStyle(color: Colors.teal),
                 ),
               ),
-
             const SizedBox(height: 32),
             const Divider(),
             const SizedBox(height: 16),
-
             const Text(
               'Without BLoC — single select (local search only)',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -260,9 +264,7 @@ class _ExamplePageState extends State<ExamplePage> {
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ),
-
             const SizedBox(height: 32),
-
             const Text(
               'Without BLoC — multi select (simulated remote search)',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
