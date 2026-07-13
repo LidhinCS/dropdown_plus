@@ -3,7 +3,7 @@
 [![pub package](https://img.shields.io/pub/v/dropdown_plus_bloc.svg)](https://pub.dev/packages/dropdown_plus_bloc)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A highly customisable Flutter dropdown package with optional **BLoC / Cubit** integration. Use `*Plus` widgets with a cubit, or plain widgets with your own state.
+A highly customisable Flutter dropdown package with optional **BLoC / Cubit** integration. Use `*Plus` widgets with a cubit, plain widgets with your own state, or the **typed API** with your domain models directly.
 
 | Widget | Description |
 |--------|-------------|
@@ -11,14 +11,16 @@ A highly customisable Flutter dropdown package with optional **BLoC / Cubit** in
 | `MultiSelectDropdownPlus` | Multi-select with chips (BLoC/Cubit) |
 | `SearchableDropdown` | Single-select searchable dropdown (no BLoC — pass `items` / `isLoading`) |
 | `MultiSelectDropdown` | Multi-select with chips (no BLoC — pass `items` / `isLoading`) |
+| `*FormField` variants | `Form` integration with `validator` / `onSaved` (see below) |
+| `Typed*` widgets | Opt-in generics — `User` instead of `DropdownItem` ([typed API](#typed-api-120)) |
 
 > **Upgrading from 0.1.x?** See [doc/UPGRADING_TO_1.0.md](doc/UPGRADING_TO_1.0.md) — no code changes required.
 >
-> **What's next?** See [doc/ROADMAP.md](doc/ROADMAP.md) for the post-1.0 plan (typed API, form fields, enhancements).
+> **Upgrading to 1.1?** See [doc/UPGRADING_TO_1.1.md](doc/UPGRADING_TO_1.1.md) — `enabled`, builders, `errorBuilder`, and form fields.
 >
-> **Upgrading to 1.1?** See [doc/UPGRADING_TO_1.1.md](doc/UPGRADING_TO_1.1.md) — optional `enabled`, builders, `errorBuilder`, and form fields in 1.1.1.
+> **Typed API (1.2.0)?** See [doc/TYPED_API.md](doc/TYPED_API.md) or the [Typed API](#typed-api-120) section below.
 >
-> **Typed API (1.2.0)?** See [doc/TYPED_API.md](doc/TYPED_API.md) — opt-in `import 'package:dropdown_plus_bloc/typed.dart';`
+> **Roadmap:** [doc/ROADMAP.md](doc/ROADMAP.md)
 
 ---
 
@@ -26,6 +28,10 @@ A highly customisable Flutter dropdown package with optional **BLoC / Cubit** in
 
 - 🔌 **BLoC / Cubit integration** — `SearchableDropdownPlus` / `MultiSelectDropdownPlus` wire to any `Cubit` or `Bloc`
 - 📦 **Plain StatefulWidget API** — `SearchableDropdown` / `MultiSelectDropdown` work with `setState`, Provider, Riverpod, etc.
+- 🧬 **Typed API (1.2.0)** — opt-in `Typed*` widgets work with `User` (or any `T`) — no manual `DropdownItem` mapping
+- 📝 **Form fields** — `SearchableDropdownFormField`, `SearchableDropdownPlusFormField`, and multi-select variants
+- 📄 **Pagination (1.3.0)** — `onLoadMore`, `hasMore`, `isLoadingMore` for infinite scroll lists
+- ♿ **Accessibility** — semantics on items and triggers, optional `focusNode`
 - 🔍 **Real-time search** — calls your cubit's search method as the user types
 - ⏱ **Optional debounce** — `debounceDuration` on all widgets (default: immediate)
 - 📴 **Offline caching** — falls back to client-side filtering when no internet is available
@@ -55,7 +61,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  dropdown_plus_bloc: ^1.0.0
+  dropdown_plus_bloc: ^1.3.0
 ```
 
 `flutter_bloc` is included as a transitive dependency for `*Plus` widgets.
@@ -171,6 +177,106 @@ MultiSelectDropdown(
   },
   onSelectionChanged: (items) =>
       setState(() => selectedWorkerItems = items),
+)
+```
+
+---
+
+## Typed API (1.2.0)
+
+Use your domain type `T` directly — no `DropdownItem` boilerplate. **Opt-in** separate import; the default API is unchanged.
+
+```dart
+import 'package:dropdown_plus_bloc/typed.dart';
+```
+
+### Single select (BLoC)
+
+```dart
+TypedSearchableDropdownPlus<User, UsersCubit, UsersState>(
+  cubit: context.read<UsersCubit>(),
+  hintText: 'Select user…',
+  itemLabel: (user) => '${user.name} · ${user.role}',
+  itemEquals: (a, b) => a.id == b.id,
+  value: selectedUser,
+  onChanged: (user) => setState(() => selectedUser = user),
+  onSearch: (query) => context.read<UsersCubit>().search(query),
+  onStateChange: (state, updateItems, updateLoading) {
+    if (state is UsersLoaded) {
+      updateItems(state.users); // List<User>, not List<DropdownItem>
+      updateLoading(false);
+    } else if (state is UsersLoading) {
+      updateLoading(true);
+    }
+  },
+)
+```
+
+### Single select (no BLoC)
+
+```dart
+TypedSearchableDropdown<User>(
+  hintText: 'Select user…',
+  items: users,
+  isLoading: isLoading,
+  itemLabel: (u) => u.name,
+  value: selectedUser,
+  onChanged: (user) => setState(() => selectedUser = user),
+)
+```
+
+### Multi select
+
+| Legacy | Typed |
+|--------|-------|
+| `MultiSelectDropdownPlus<C, S>` | `TypedMultiSelectDropdownPlus<T, C, S>` |
+| `MultiSelectDropdown` | `TypedMultiSelectDropdown<T>` |
+
+Use `values` / `onChanged: (List<T>)` instead of `selectedItems` / `List<DropdownItem>`.
+
+### Legacy bridge
+
+```dart
+final items = users.toDropdownItems((u) => u.name);
+```
+
+Full reference: [doc/TYPED_API.md](doc/TYPED_API.md)
+
+---
+
+## Form fields (1.1.1)
+
+Wrap any dropdown in a `FormField` with `validator`, `onSaved`, and `autovalidateMode`:
+
+```dart
+Form(
+  key: _formKey,
+  child: SearchableDropdownFormField(
+    hintText: 'Select user…',
+    items: userItems,
+    isLoading: false,
+    validator: (value) => value == null ? 'Required' : null,
+    onSaved: (item) => _savedUser = item?.value as User?,
+  ),
+)
+```
+
+BLoC variant: `SearchableDropdownPlusFormField<C, S>` — same form params plus `cubit` / `onStateChange`.
+
+---
+
+## Pagination (1.3.0)
+
+Load more items when the user scrolls to the bottom of the list:
+
+```dart
+SearchableDropdownPlus<UsersCubit, UsersState>(
+  cubit: cubit,
+  hintText: 'Select user…',
+  hasMore: state.hasMore,
+  isLoadingMore: state.isLoadingMore,
+  onLoadMore: cubit.fetchNextPage,
+  // ...
 )
 ```
 
@@ -413,6 +519,35 @@ Same parameters as `SearchableDropdown`, plus:
 | `selectedItemBuilder` | `Widget Function(List<DropdownItem>)?` | — | Custom chip row in trigger |
 | `buttonHeight` | `double?` | — | Fixed trigger height |
 | `buttonWidth` | `double?` | — | Fixed trigger width |
+
+### Typed widgets (`package:dropdown_plus_bloc/typed.dart`)
+
+| Legacy | Typed |
+|--------|-------|
+| `SearchableDropdownPlus<C, S>` | `TypedSearchableDropdownPlus<T, C, S>` |
+| `MultiSelectDropdownPlus<C, S>` | `TypedMultiSelectDropdownPlus<T, C, S>` |
+| `SearchableDropdown` | `TypedSearchableDropdown<T>` |
+| `MultiSelectDropdown` | `TypedMultiSelectDropdown<T>` |
+
+| Typed parameter | Replaces (legacy) |
+|-----------------|-------------------|
+| `itemLabel: (T) => String` | Manual `DropdownItem(value:, label:)` |
+| `value` / `values` | `selectedValue` / `selectedItems` |
+| `onChanged(T?)` / `onChanged(List<T>)` | `onSelectionChanged(DropdownItem…)` |
+| `updateItems(List<T>)` in `onStateChange` | `updateList(List<DropdownItem>)` |
+| `itemEquals` | Implicit `==` on `DropdownItem.value` |
+| `itemBuilder(context, T, bool)` | `itemBuilder(DropdownItem, bool)` |
+
+### Form field widgets
+
+| Widget | Wraps |
+|--------|-------|
+| `SearchableDropdownFormField` | `SearchableDropdown` |
+| `SearchableDropdownPlusFormField<C, S>` | `SearchableDropdownPlus` |
+| `MultiSelectDropdownFormField` | `MultiSelectDropdown` |
+| `MultiSelectDropdownPlusFormField<C, S>` | `MultiSelectDropdownPlus` |
+
+Shared form params: `validator`, `onSaved`, `autovalidateMode`, `initialValue` / `initialValue` (list), `enabled`.
 
 ---
 

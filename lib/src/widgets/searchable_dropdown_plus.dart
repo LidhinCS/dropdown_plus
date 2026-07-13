@@ -83,6 +83,10 @@ class SearchableDropdownPlus<C extends BlocBase<S>, S>
     this.errorBuilder,
     this.semanticsLabel,
     this.minSearchLength = 0,
+    this.onLoadMore,
+    this.hasMore = false,
+    this.isLoadingMore = false,
+    this.focusNode,
   });
 
   /// The BLoC/Cubit instance that drives this dropdown.
@@ -188,6 +192,18 @@ class SearchableDropdownPlus<C extends BlocBase<S>, S>
 
   /// Minimum query length before [onSearch] is invoked (empty query always fires).
   final int minSearchLength;
+
+  /// Called when the user scrolls near the bottom of the item list.
+  final VoidCallback? onLoadMore;
+
+  /// Whether more items can be loaded via [onLoadMore].
+  final bool hasMore;
+
+  /// Shows a loading footer while the next page loads.
+  final bool isLoadingMore;
+
+  /// Optional focus node for the trigger button.
+  final FocusNode? focusNode;
 
   @override
   State<SearchableDropdownPlus<C, S>> createState() =>
@@ -313,7 +329,8 @@ class _SearchableDropdownPlusState<C extends BlocBase<S>, S>
               resolved: resolved,
               isOpen: _isOpen,
               enabled: widget.enabled,
-              semanticsLabel: widget.semanticsLabel,
+              semanticsLabel: widget.semanticsLabel ?? widget.hintText,
+              focusNode: widget.focusNode,
               showLoadingSpinner: _isLoading,
               onTap: _handleTriggerTap,
               child: _buildTriggerContent(resolved),
@@ -383,6 +400,9 @@ class _SearchableDropdownPlusState<C extends BlocBase<S>, S>
         resolved: resolved,
         items: _items,
         itemBuilder: widget.itemBuilder,
+        onLoadMore: widget.onLoadMore,
+        hasMore: widget.hasMore,
+        isLoadingMore: widget.isLoadingMore,
         isItemSelected: (item) => _selected?.value == item.value,
         onItemTap: (item) {
           setState(() {

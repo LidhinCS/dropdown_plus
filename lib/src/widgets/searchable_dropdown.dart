@@ -47,6 +47,10 @@ class SearchableDropdown extends StatefulWidget {
     this.errorBuilder,
     this.semanticsLabel,
     this.minSearchLength = 0,
+    this.onLoadMore,
+    this.hasMore = false,
+    this.isLoadingMore = false,
+    this.focusNode,
   });
 
   /// Items currently shown (after remote search or full list for local filter).
@@ -99,6 +103,10 @@ class SearchableDropdown extends StatefulWidget {
   final DropdownErrorBuilder? errorBuilder;
   final String? semanticsLabel;
   final int minSearchLength;
+  final VoidCallback? onLoadMore;
+  final bool hasMore;
+  final bool isLoadingMore;
+  final FocusNode? focusNode;
 
   @override
   State<SearchableDropdown> createState() => _SearchableDropdownState();
@@ -231,7 +239,8 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
           resolved: resolved,
           isOpen: _isOpen,
           enabled: widget.enabled,
-          semanticsLabel: widget.semanticsLabel,
+          semanticsLabel: widget.semanticsLabel ?? widget.hintText,
+          focusNode: widget.focusNode,
           showLoadingSpinner: widget.isLoading && widget.items.isEmpty,
           onTap: _handleTriggerTap,
           child: _buildTriggerContent(resolved),
@@ -299,6 +308,9 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
         resolved: resolved,
         items: _items,
         itemBuilder: widget.itemBuilder,
+        onLoadMore: widget.onLoadMore,
+        hasMore: widget.hasMore,
+        isLoadingMore: widget.isLoadingMore,
         isItemSelected: (item) => _selected?.value == item.value,
         onItemTap: (item) {
           setState(() {

@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-06-30
+
+### Added
+- **Pagination** — optional `onLoadMore`, `hasMore`, and `isLoadingMore` on all dropdown widgets (and typed variants).
+- **`focusNode`** on trigger buttons for keyboard/focus traversal.
+- Improved **accessibility** — `Semantics` on list items (selected/checked), trigger `expanded` state, default label from `hintText`.
+
+### Changed
+- Item lists use **`ListView.builder`** instead of `ListView.separated` + `shrinkWrap` for better performance with long lists.
+
+**No breaking API changes.**
+
 ## [1.2.0] - 2026-06-30
 
 ### Added

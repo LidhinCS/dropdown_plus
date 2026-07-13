@@ -48,6 +48,10 @@ class MultiSelectDropdown extends StatefulWidget {
     this.errorBuilder,
     this.semanticsLabel,
     this.minSearchLength = 0,
+    this.onLoadMore,
+    this.hasMore = false,
+    this.isLoadingMore = false,
+    this.focusNode,
   });
 
   final List<DropdownItem<dynamic>> items;
@@ -96,6 +100,10 @@ class MultiSelectDropdown extends StatefulWidget {
   final DropdownErrorBuilder? errorBuilder;
   final String? semanticsLabel;
   final int minSearchLength;
+  final VoidCallback? onLoadMore;
+  final bool hasMore;
+  final bool isLoadingMore;
+  final FocusNode? focusNode;
 
   @override
   State<MultiSelectDropdown> createState() => _MultiSelectDropdownState();
@@ -256,7 +264,8 @@ class _MultiSelectDropdownState extends State<MultiSelectDropdown> {
               resolved: resolved,
               isOpen: _isOpen,
               enabled: widget.enabled,
-              semanticsLabel: widget.semanticsLabel,
+              semanticsLabel: widget.semanticsLabel ?? widget.hintText,
+              focusNode: widget.focusNode,
               width: widget.buttonWidth,
               height: widget.buttonHeight,
               showLoadingSpinner: widget.isLoading && widget.items.isEmpty,
@@ -347,6 +356,9 @@ class _MultiSelectDropdownState extends State<MultiSelectDropdown> {
         resolved: resolved,
         items: _items,
         itemBuilder: widget.itemBuilder,
+        onLoadMore: widget.onLoadMore,
+        hasMore: widget.hasMore,
+        isLoadingMore: widget.isLoadingMore,
         isItemSelected: (item) =>
             _selected.any((s) => s.value == item.value),
         onItemTap: _toggleItem,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/dropdown_item.dart';
+import 'dropdown_pagination.dart';
 import 'dropdown_theme_resolver.dart';
 
 class DropdownMultiSelectHeader extends StatelessWidget {
@@ -81,12 +82,16 @@ class DropdownMultiSelectHeader extends StatelessWidget {
                   ),
                 ),
               const SizedBox(width: 8),
-              GestureDetector(
-                onTap: onClose,
-                child: Icon(
-                  Icons.close_rounded,
-                  size: 20,
-                  color: cs.onSurface.withValues(alpha: 0.6),
+              Semantics(
+                button: true,
+                label: 'Close dropdown',
+                child: GestureDetector(
+                  onTap: onClose,
+                  child: Icon(
+                    Icons.close_rounded,
+                    size: 20,
+                    color: cs.onSurface.withValues(alpha: 0.6),
+                  ),
                 ),
               ),
             ],
@@ -166,13 +171,16 @@ class DropdownMultiSelectItemRow extends StatelessWidget {
   }
 }
 
-class DropdownMultiSelectItemList extends StatelessWidget {
+class DropdownMultiSelectItemList extends StatefulWidget {
   const DropdownMultiSelectItemList({
     required this.resolved,
     required this.items,
     required this.isItemSelected,
     required this.onItemTap,
     this.itemBuilder,
+    this.onLoadMore,
+    this.hasMore = false,
+    this.isLoadingMore = false,
     super.key,
   });
 
@@ -182,51 +190,100 @@ class DropdownMultiSelectItemList extends StatelessWidget {
   final void Function(DropdownItem<dynamic> item) onItemTap;
   final Widget Function(DropdownItem<dynamic> item, bool isSelected)?
       itemBuilder;
+  final VoidCallback? onLoadMore;
+  final bool hasMore;
+  final bool isLoadingMore;
+
+  @override
+  State<DropdownMultiSelectItemList> createState() =>
+      _DropdownMultiSelectItemListState();
+}
+
+class _DropdownMultiSelectItemListState
+    extends State<DropdownMultiSelectItemList> {
+  late final DropdownPaginationScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = DropdownPaginationScrollController(
+      onLoadMore: widget.onLoadMore,
+      hasMore: widget.hasMore,
+      isLoadingMore: widget.isLoadingMore,
+    );
+  }
+
+  @override
+  void didUpdateWidget(DropdownMultiSelectItemList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _scrollController.hasMore = widget.hasMore;
+    _scrollController.isLoadingMore = widget.isLoadingMore;
+    _scrollController.onLoadMore = widget.onLoadMore;
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final t = resolved.theme;
-    final cs = resolved.colorScheme;
-    final divCol = resolved.dividerColor;
+    final t = widget.resolved.theme;
+    final cs = widget.resolved.colorScheme;
+    final divCol = widget.resolved.dividerColor;
+    final showFooter = widget.isLoadingMore;
 
-    return ListView.separated(
-      shrinkWrap: true,
+    return ListView.builder(
+      controller: _scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(vertical: 4),
-      itemCount: items.length,
-      separatorBuilder: (_, __) => Divider(
-        height: 1,
-        thickness: 1,
-        color: divCol,
-        indent: 16,
-        endIndent: 16,
-      ),
+      itemCount: widget.items.length + (showFooter ? 1 : 0),
       itemBuilder: (ctx, i) {
-        final item = items[i];
-        final isSelected = isItemSelected(item);
-        return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => onItemTap(item),
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              padding: t.itemPadding ??
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? (t.selectedItemBackgroundColor ??
-                        cs.primaryContainer.withValues(alpha: 0.3))
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: DropdownMultiSelectItemRow(
-                resolved: resolved,
-                item: item,
-                isSelected: isSelected,
-                itemBuilder: itemBuilder,
+        if (i >= widget.items.length) {
+          return DropdownLoadMoreFooter(isLoading: widget.isLoadingMore);
+        }
+
+        final item = widget.items[i];
+        final isSelected = widget.isItemSelected(item);
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (i > 0) dropdownItemDivider(divCol, indent: 16),
+            Semantics(
+              button: true,
+              checked: isSelected,
+              label: item.label,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => widget.onItemTap(item),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: t.itemPadding ??
+                        const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? (t.selectedItemBackgroundColor ??
+                              cs.primaryContainer.withValues(alpha: 0.3))
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: DropdownMultiSelectItemRow(
+                      resolved: widget.resolved,
+                      item: item,
+                      isSelected: isSelected,
+                      itemBuilder: widget.itemBuilder,
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
+          ],
         );
       },
     );
