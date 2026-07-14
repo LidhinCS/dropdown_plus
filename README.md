@@ -37,14 +37,13 @@ import 'package:dropdown_plus_bloc/typed.dart';             // typed API + contr
 ## Screenshots
 
 ### Single select
-<img src="doc/images/dark_single_select.png" alt="Single select demo" width="320" />
+<img src="doc/images/single_select.png" alt="Single select dropdown" width="280" />
 
 ### Multi select
-<p>
-  <img src="doc/images/multiselect.png" alt="Multi select demo" width="280" />
-  &nbsp;
-  <img src="doc/images/multi_select_selected.png" alt="Multi select with selection" width="280" />
-</p>
+<img src="doc/images/multi_select.png" alt="Multi select dropdown" width="280" />
+
+### Form field
+<img src="doc/images/form_field.png" alt="Dropdown form field" width="280" />
 
 ---
 
