@@ -5,6 +5,7 @@ import '../internal/dropdown_states.dart';
 import '../models/dropdown_plus_theme.dart';
 import '../models/dropdown_plus_theme_style.dart';
 import '../widgets/searchable_dropdown_plus.dart';
+import 'dropdown_plus_controller.dart';
 import 'typed_dropdown_adapter.dart';
 
 /// Typed single-select searchable dropdown with BLoC/Cubit integration.
@@ -13,7 +14,7 @@ import 'typed_dropdown_adapter.dart';
 ///
 /// Works with [User] (or any [T]) directly instead of [DropdownItem].
 class TypedSearchableDropdownPlus<T, C extends BlocBase<S>, S>
-    extends StatelessWidget {
+    extends StatefulWidget {
   const TypedSearchableDropdownPlus({
     required this.cubit,
     required this.onSearch,
@@ -23,6 +24,7 @@ class TypedSearchableDropdownPlus<T, C extends BlocBase<S>, S>
     super.key,
     this.value,
     this.onChanged,
+    this.controller,
     this.itemEquals,
     this.searchHint,
     this.noResultsText,
@@ -60,6 +62,9 @@ class TypedSearchableDropdownPlus<T, C extends BlocBase<S>, S>
   final ItemLabel<T> itemLabel;
   final T? value;
   final void Function(T? value)? onChanged;
+
+  /// When set, owns selection; [value] is only an initial seed.
+  final DropdownPlusController<T>? controller;
   final ItemEquals<T>? itemEquals;
   final String? searchHint;
   final String? noResultsText;
@@ -86,53 +91,125 @@ class TypedSearchableDropdownPlus<T, C extends BlocBase<S>, S>
   final FocusNode? focusNode;
 
   @override
+  State<TypedSearchableDropdownPlus<T, C, S>> createState() =>
+      _TypedSearchableDropdownPlusState<T, C, S>();
+}
+
+class _TypedSearchableDropdownPlusState<T, C extends BlocBase<S>, S>
+    extends State<TypedSearchableDropdownPlus<T, C, S>> {
+  bool _seeded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _bindController(widget.controller);
+    _maybeSeed();
+  }
+
+  @override
+  void didUpdateWidget(TypedSearchableDropdownPlus<T, C, S> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      _unbindController(oldWidget.controller);
+      _bindController(widget.controller);
+      _seeded = false;
+      _maybeSeed();
+    }
+  }
+
+  @override
+  void dispose() {
+    _unbindController(widget.controller);
+    super.dispose();
+  }
+
+  void _bindController(DropdownPlusController<T>? controller) {
+    if (controller == null) return;
+    controller.addListener(_onController);
+    controller.bindSelectionListener((value) {
+      widget.onChanged?.call(value);
+      if (mounted) setState(() {});
+    });
+  }
+
+  void _unbindController(DropdownPlusController<T>? controller) {
+    if (controller == null) return;
+    controller.removeListener(_onController);
+    controller.bindSelectionListener(null);
+  }
+
+  void _onController() {
+    if (mounted) setState(() {});
+  }
+
+  void _maybeSeed() {
+    final controller = widget.controller;
+    if (controller == null || _seeded) return;
+    _seeded = true;
+    if (controller.value == null && widget.value != null) {
+      controller.applyFromUi(widget.value);
+    }
+  }
+
+  T? get _effectiveValue =>
+      widget.controller != null ? widget.controller!.value : widget.value;
+
+  @override
   Widget build(BuildContext context) {
     final adapter = TypedDropdownAdapter<T>(
-      itemLabel: itemLabel,
-      itemEquals: itemEquals,
+      itemLabel: widget.itemLabel,
+      itemEquals: widget.itemEquals,
     );
 
     return SearchableDropdownPlus<C, S>(
-      cubit: cubit,
-      onSearch: onSearch,
-      hintText: hintText,
-      selectedValue: adapter.toOptionalItem(value),
-      onSelectionChanged: (item) => onChanged?.call(adapter.asValue(item)),
+      cubit: widget.cubit,
+      onSearch: widget.onSearch,
+      hintText: widget.hintText,
+      selectedValue: adapter.toOptionalItem(_effectiveValue),
+      menuController: widget.controller,
+      onSelectionChanged: (item) {
+        final value = adapter.asValue(item);
+        widget.controller?.applyFromUi(value);
+        widget.onChanged?.call(value);
+      },
       onStateChange: (state, updateList, updateLoading) {
-        onStateChange(
+        widget.onStateChange(
           state,
           (items) => updateList(adapter.toItems(items)),
           updateLoading,
         );
       },
-      searchHint: searchHint,
-      noResultsText: noResultsText,
-      loadingText: loadingText,
-      needInitialFetch: needInitialFetch,
-      dropdownTheme: dropdownTheme,
-      themeStyle: themeStyle,
-      itemBuilder: itemBuilder == null
+      searchHint: widget.searchHint,
+      noResultsText: widget.noResultsText,
+      loadingText: widget.loadingText,
+      needInitialFetch: widget.needInitialFetch,
+      dropdownTheme: widget.dropdownTheme,
+      themeStyle: widget.themeStyle,
+      itemBuilder: widget.itemBuilder == null
           ? null
-          : (item, isSelected) =>
-              itemBuilder!(context, adapter.asValue(item), isSelected),
-      selectedValueBuilder: valueBuilder == null
+          : (item, isSelected) => widget.itemBuilder!(
+                context,
+                adapter.asValue(item),
+                isSelected,
+              ),
+      selectedValueBuilder: widget.valueBuilder == null
           ? null
-          : (item) => valueBuilder!(adapter.asValue(item)),
-      checkInternetConnection: checkInternetConnection,
-      debounceDuration: debounceDuration,
-      enabled: enabled,
-      autofocusSearch: autofocusSearch,
-      emptyBuilder: emptyBuilder,
-      loadingBuilder: loadingBuilder,
-      error: error,
-      onRetry: onRetry,
-      errorBuilder: errorBuilder,
-      semanticsLabel: semanticsLabel,
-      minSearchLength: minSearchLength,
-      onLoadMore: onLoadMore,
-      hasMore: hasMore,
-      isLoadingMore: isLoadingMore,
-      focusNode: focusNode,
+          : (item) => widget.valueBuilder!(adapter.asValue(item)),
+      checkInternetConnection: widget.checkInternetConnection,
+      debounceDuration: widget.debounceDuration,
+      enabled: widget.enabled,
+      autofocusSearch: widget.autofocusSearch,
+      emptyBuilder: widget.emptyBuilder,
+      loadingBuilder: widget.loadingBuilder,
+      error: widget.error,
+      onRetry: widget.onRetry,
+      errorBuilder: widget.errorBuilder,
+      semanticsLabel: widget.semanticsLabel,
+      minSearchLength: widget.minSearchLength,
+      onLoadMore: widget.onLoadMore,
+      hasMore: widget.hasMore,
+      isLoadingMore: widget.isLoadingMore,
+      focusNode: widget.focusNode,
     );
   }
 }

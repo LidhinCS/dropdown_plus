@@ -17,6 +17,8 @@ export 'src/internal/dropdown_states.dart'
     show DropdownEmptyBuilder, DropdownErrorBuilder, DropdownLoadingBuilder;
 export 'src/models/dropdown_plus_theme.dart';
 export 'src/models/dropdown_plus_theme_style.dart';
+export 'src/typed/dropdown_plus_controller.dart'
+    show DropdownPlusController, DropdownPlusMultiController;
 export 'src/typed/typed_dropdown_adapter.dart';
 export 'src/typed/typed_dropdown_extensions.dart';
 export 'src/typed/typed_multi_select_dropdown.dart';

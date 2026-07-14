@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../internal/dropdown_internet.dart';
+import '../internal/dropdown_menu_controller.dart';
 import '../internal/dropdown_panel.dart';
 import '../internal/dropdown_search_bar.dart';
 import '../internal/dropdown_single_select.dart';
@@ -87,6 +88,7 @@ class SearchableDropdownPlus<C extends BlocBase<S>, S>
     this.hasMore = false,
     this.isLoadingMore = false,
     this.focusNode,
+    this.menuController,
   });
 
   /// The BLoC/Cubit instance that drives this dropdown.
@@ -205,13 +207,20 @@ class SearchableDropdownPlus<C extends BlocBase<S>, S>
   /// Optional focus node for the trigger button.
   final FocusNode? focusNode;
 
+  /// Optional menu controller for programmatic open/close.
+  ///
+  /// Used by the typed API (`DropdownPlusController`). Prefer typed widgets
+  /// rather than assigning this directly.
+  final DropdownMenuController? menuController;
+
   @override
   State<SearchableDropdownPlus<C, S>> createState() =>
       _SearchableDropdownPlusState<C, S>();
 }
 
 class _SearchableDropdownPlusState<C extends BlocBase<S>, S>
-    extends State<SearchableDropdownPlus<C, S>> {
+    extends State<SearchableDropdownPlus<C, S>>
+    implements DropdownMenuClient {
   List<DropdownItem<dynamic>> _items = [];
   List<DropdownItem<dynamic>> _cache = [];
   bool _isLoading = false;
@@ -221,16 +230,24 @@ class _SearchableDropdownPlusState<C extends BlocBase<S>, S>
   late DebouncedCallback _debouncedSearch;
 
   @override
+  bool get isMenuOpen => _isOpen;
+
+  @override
   void initState() {
     super.initState();
     _debouncedSearch = DebouncedCallback(duration: widget.debounceDuration);
     _selected = widget.selectedValue;
+    widget.menuController?.bindClient(this);
     if (widget.needInitialFetch) widget.onSearch('');
   }
 
   @override
   void didUpdateWidget(SearchableDropdownPlus<C, S> oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.menuController != widget.menuController) {
+      oldWidget.menuController?.unbindClient(this);
+      widget.menuController?.bindClient(this);
+    }
     if (oldWidget.debounceDuration != widget.debounceDuration) {
       _debouncedSearch.dispose();
       _debouncedSearch = DebouncedCallback(duration: widget.debounceDuration);
@@ -242,9 +259,24 @@ class _SearchableDropdownPlusState<C extends BlocBase<S>, S>
 
   @override
   void dispose() {
+    widget.menuController?.unbindClient(this);
     _debouncedSearch.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  @override
+  Future<void> openMenu() async {
+    if (!widget.enabled || _isOpen) return;
+    setState(() => _isOpen = true);
+    await _onOpened();
+  }
+
+  @override
+  void closeMenu() {
+    if (!_isOpen) return;
+    setState(() => _isOpen = false);
+    _searchController.clear();
   }
 
   void _localSearch(String query) {
@@ -283,20 +315,23 @@ class _SearchableDropdownPlusState<C extends BlocBase<S>, S>
     }
   }
 
+  Future<void> _onOpened() async {
+    final online = await dropdownHasInternet(widget.checkInternetConnection);
+    if (!mounted) return;
+    if (online) {
+      _searchController.clear();
+      widget.onSearch('');
+    } else if (_cache.isNotEmpty) {
+      setState(() => _items = _cache);
+    }
+  }
+
   Future<void> _handleTriggerTap() async {
     if (!widget.enabled) return;
-    final opening = !_isOpen;
-    setState(() => _isOpen = opening);
-    if (opening) {
-      final online = await dropdownHasInternet(widget.checkInternetConnection);
-      if (online) {
-        _searchController.clear();
-        widget.onSearch('');
-      } else if (_cache.isNotEmpty) {
-        setState(() => _items = _cache);
-      }
+    if (_isOpen) {
+      closeMenu();
     } else {
-      _searchController.clear();
+      await openMenu();
     }
   }
 
@@ -405,12 +440,9 @@ class _SearchableDropdownPlusState<C extends BlocBase<S>, S>
         isLoadingMore: widget.isLoadingMore,
         isItemSelected: (item) => _selected?.value == item.value,
         onItemTap: (item) {
-          setState(() {
-            _selected = item;
-            _isOpen = false;
-          });
+          setState(() => _selected = item);
+          closeMenu();
           widget.onSelectionChanged?.call(item);
-          _searchController.clear();
         },
       );
     }

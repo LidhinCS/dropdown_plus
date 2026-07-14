@@ -53,6 +53,30 @@ TypedSearchableDropdown<User>(
 - `TypedMultiSelectDropdownPlus<T, C, S>` — `values` / `onChanged: (List<T>)`
 - `TypedMultiSelectDropdown<T>` — same without BLoC
 
+## Controller (1.4.0)
+
+When a controller is passed, it owns selection. Widget `value` / `values` are only used as an initial seed.
+
+```dart
+final controller = DropdownPlusController<User>();
+
+TypedSearchableDropdown<User>(
+  controller: controller,
+  hintText: 'Select user',
+  items: users,
+  isLoading: false,
+  itemLabel: (u) => u.name,
+  onChanged: (user) => ...,
+);
+
+controller.select(user); // also calls onChanged
+controller.clear();
+controller.open();
+controller.close();
+```
+
+Multi-select uses `DropdownPlusMultiController<T>` with `select`, `deselect`, `setValues`, and `clear`.
+
 ## Legacy bridge
 
 ```dart

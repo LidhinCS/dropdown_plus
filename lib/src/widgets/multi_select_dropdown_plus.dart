@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../internal/dropdown_internet.dart';
+import '../internal/dropdown_menu_controller.dart';
 import '../internal/dropdown_multi_select.dart';
 import '../internal/dropdown_panel.dart';
 import '../internal/dropdown_search_bar.dart';
@@ -85,6 +86,7 @@ class MultiSelectDropdownPlus<C extends BlocBase<S>, S>
     this.hasMore = false,
     this.isLoadingMore = false,
     this.focusNode,
+    this.menuController,
   });
 
   /// The BLoC/Cubit instance that drives this dropdown.
@@ -164,13 +166,17 @@ class MultiSelectDropdownPlus<C extends BlocBase<S>, S>
   final bool isLoadingMore;
   final FocusNode? focusNode;
 
+  /// Optional menu controller for programmatic open/close (typed API).
+  final DropdownMenuController? menuController;
+
   @override
   State<MultiSelectDropdownPlus<C, S>> createState() =>
       _MultiSelectDropdownPlusState<C, S>();
 }
 
 class _MultiSelectDropdownPlusState<C extends BlocBase<S>, S>
-    extends State<MultiSelectDropdownPlus<C, S>> {
+    extends State<MultiSelectDropdownPlus<C, S>>
+    implements DropdownMenuClient {
   List<DropdownItem<dynamic>> _items = [];
   List<DropdownItem<dynamic>> _cache = [];
   bool _isLoading = false;
@@ -180,16 +186,24 @@ class _MultiSelectDropdownPlusState<C extends BlocBase<S>, S>
   late DebouncedCallback _debouncedSearch;
 
   @override
+  bool get isMenuOpen => _isOpen;
+
+  @override
   void initState() {
     super.initState();
     _debouncedSearch = DebouncedCallback(duration: widget.debounceDuration);
     _selected = List.from(widget.selectedItems);
+    widget.menuController?.bindClient(this);
     if (widget.needInitialFetch) widget.onSearch('');
   }
 
   @override
   void didUpdateWidget(MultiSelectDropdownPlus<C, S> oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.menuController != widget.menuController) {
+      oldWidget.menuController?.unbindClient(this);
+      widget.menuController?.bindClient(this);
+    }
     if (oldWidget.debounceDuration != widget.debounceDuration) {
       _debouncedSearch.dispose();
       _debouncedSearch = DebouncedCallback(duration: widget.debounceDuration);
@@ -201,9 +215,24 @@ class _MultiSelectDropdownPlusState<C extends BlocBase<S>, S>
 
   @override
   void dispose() {
+    widget.menuController?.unbindClient(this);
     _debouncedSearch.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  @override
+  Future<void> openMenu() async {
+    if (!widget.enabled || _isOpen) return;
+    setState(() => _isOpen = true);
+    await _onOpened();
+  }
+
+  @override
+  void closeMenu() {
+    if (!_isOpen) return;
+    setState(() => _isOpen = false);
+    _searchController.clear();
   }
 
   void _localSearch(String query) {
@@ -262,26 +291,27 @@ class _MultiSelectDropdownPlusState<C extends BlocBase<S>, S>
     }
   }
 
-  Future<void> _handleTriggerTap() async {
-    if (!widget.enabled) return;
-    final opening = !_isOpen;
-    setState(() => _isOpen = opening);
-    if (opening && _items.isEmpty) {
-      final online = await dropdownHasInternet(widget.checkInternetConnection);
-      if (online) {
-        widget.onSearch('');
-      } else if (_cache.isNotEmpty) {
-        setState(() => _items = _cache);
-      }
-    } else if (!opening) {
-      _searchController.clear();
+  Future<void> _onOpened() async {
+    if (_items.isNotEmpty) return;
+    final online = await dropdownHasInternet(widget.checkInternetConnection);
+    if (!mounted) return;
+    if (online) {
+      widget.onSearch('');
+    } else if (_cache.isNotEmpty) {
+      setState(() => _items = _cache);
     }
   }
 
-  void _closePanel() {
-    setState(() => _isOpen = false);
-    _searchController.clear();
+  Future<void> _handleTriggerTap() async {
+    if (!widget.enabled) return;
+    if (_isOpen) {
+      closeMenu();
+    } else {
+      await openMenu();
+    }
   }
+
+  void _closePanel() => closeMenu();
 
   void _handleRetry() {
     if (widget.onRetry != null) {

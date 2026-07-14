@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../internal/dropdown_internet.dart';
+import '../internal/dropdown_menu_controller.dart';
 import '../internal/dropdown_panel.dart';
 import '../internal/dropdown_search_bar.dart';
 import '../internal/dropdown_single_select.dart';
@@ -51,6 +52,7 @@ class SearchableDropdown extends StatefulWidget {
     this.hasMore = false,
     this.isLoadingMore = false,
     this.focusNode,
+    this.menuController,
   });
 
   /// Items currently shown (after remote search or full list for local filter).
@@ -108,11 +110,15 @@ class SearchableDropdown extends StatefulWidget {
   final bool isLoadingMore;
   final FocusNode? focusNode;
 
+  /// Optional menu controller for programmatic open/close (typed API).
+  final DropdownMenuController? menuController;
+
   @override
   State<SearchableDropdown> createState() => _SearchableDropdownState();
 }
 
-class _SearchableDropdownState extends State<SearchableDropdown> {
+class _SearchableDropdownState extends State<SearchableDropdown>
+    implements DropdownMenuClient {
   List<DropdownItem<dynamic>> _items = [];
   List<DropdownItem<dynamic>> _cache = [];
   bool _isOpen = false;
@@ -121,12 +127,16 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
   late DebouncedCallback _debouncedSearch;
 
   @override
+  bool get isMenuOpen => _isOpen;
+
+  @override
   void initState() {
     super.initState();
     _debouncedSearch = DebouncedCallback(duration: widget.debounceDuration);
     _selected = widget.selectedValue;
     _items = List.from(widget.items);
     _cache = List.from(widget.items);
+    widget.menuController?.bindClient(this);
     if (widget.needInitialFetch && widget.onSearch != null) {
       widget.onSearch!('');
     }
@@ -135,6 +145,10 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
   @override
   void didUpdateWidget(SearchableDropdown oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.menuController != widget.menuController) {
+      oldWidget.menuController?.unbindClient(this);
+      widget.menuController?.bindClient(this);
+    }
     if (oldWidget.debounceDuration != widget.debounceDuration) {
       _debouncedSearch.dispose();
       _debouncedSearch = DebouncedCallback(duration: widget.debounceDuration);
@@ -164,9 +178,24 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
 
   @override
   void dispose() {
+    widget.menuController?.unbindClient(this);
     _debouncedSearch.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  @override
+  Future<void> openMenu() async {
+    if (!widget.enabled || _isOpen) return;
+    setState(() => _isOpen = true);
+    await _onOpened();
+  }
+
+  @override
+  void closeMenu() {
+    if (!_isOpen) return;
+    setState(() => _isOpen = false);
+    _searchController.clear();
   }
 
   void _localSearch(String query) {
@@ -188,30 +217,33 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
     }
   }
 
-  Future<void> _handleTriggerTap() async {
-    if (!widget.enabled) return;
-    final opening = !_isOpen;
-    setState(() => _isOpen = opening);
-    if (opening) {
-      final online = await dropdownHasInternet(widget.checkInternetConnection);
-      if (widget.onSearch != null) {
-        if (online) {
-          _searchController.clear();
-          widget.onSearch!('');
-        } else if (_cache.isNotEmpty) {
-          setState(() => _items = _cache);
-        }
-      } else {
-        setState(() {
-          _items = List.from(widget.items);
-          _cache = List.from(widget.items);
-        });
-        if (_searchController.text.isNotEmpty) {
-          _localSearch(_searchController.text);
-        }
+  Future<void> _onOpened() async {
+    final online = await dropdownHasInternet(widget.checkInternetConnection);
+    if (!mounted) return;
+    if (widget.onSearch != null) {
+      if (online) {
+        _searchController.clear();
+        widget.onSearch!('');
+      } else if (_cache.isNotEmpty) {
+        setState(() => _items = _cache);
       }
     } else {
-      _searchController.clear();
+      setState(() {
+        _items = List.from(widget.items);
+        _cache = List.from(widget.items);
+      });
+      if (_searchController.text.isNotEmpty) {
+        _localSearch(_searchController.text);
+      }
+    }
+  }
+
+  Future<void> _handleTriggerTap() async {
+    if (!widget.enabled) return;
+    if (_isOpen) {
+      closeMenu();
+    } else {
+      await openMenu();
     }
   }
 
@@ -313,12 +345,9 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
         isLoadingMore: widget.isLoadingMore,
         isItemSelected: (item) => _selected?.value == item.value,
         onItemTap: (item) {
-          setState(() {
-            _selected = item;
-            _isOpen = false;
-          });
+          setState(() => _selected = item);
+          closeMenu();
           widget.onSelectionChanged?.call(item);
-          _searchController.clear();
         },
       );
     }

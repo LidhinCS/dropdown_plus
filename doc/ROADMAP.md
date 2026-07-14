@@ -231,14 +231,14 @@ Scroll listener at list bottom; cubit still owns data and state.
 
 ## Phase 4 — Controller and DX
 
-**Target version:** `1.3.0`
+**Target version:** `1.4.0`
 
 ```dart
 final controller = DropdownPlusController<User>();
 
 controller.select(user);
 controller.clear();
-controller.open();   // optional
+controller.open();
 controller.close();
 ```
 
@@ -379,6 +379,6 @@ Resolve before implementation:
 | Phase 1 — Form fields | **Done** | `1.1.1` |
 | Phase 2 — Typed API | **Done** (preview) | `1.2.0` |
 | Phase 3 — Scale / a11y | **Done** | `1.3.0` |
-| Phase 4 — Controller | Not started | `1.3.0` |
+| Phase 4 — Controller | **Done** | `1.4.0` |
 | Phase 5 — Docs | In progress | — |
 | Phase 6 — Deprecation | Future | `2.0+` |
