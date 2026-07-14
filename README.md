@@ -66,24 +66,24 @@ flutter pub get
 ## Quick start (BLoC)
 
 ```dart
-SearchableDropdownPlus<WorkerCubit, WorkerState>(
-  cubit: context.read<WorkerCubit>(),
-  hintText: 'Search worker…',
-  onSearch: (query) => context.read<WorkerCubit>().search(query),
+SearchableDropdownPlus<UsersCubit, UsersState>(
+  cubit: context.read<UsersCubit>(),
+  hintText: 'Select user…',
+  onSearch: (query) => context.read<UsersCubit>().search(query),
   onStateChange: (state, updateList, updateLoading) {
-    if (state is WorkersLoaded) {
+    if (state is UsersLoaded) {
       updateList(
-        state.workers
-            .map((w) => DropdownItem(value: w, label: w.name))
+        state.users
+            .map((u) => DropdownItem(value: u, label: u.name))
             .toList(),
       );
       updateLoading(false);
-    } else if (state is WorkersLoading) {
+    } else if (state is UsersLoading) {
       updateLoading(true);
     }
   },
   onSelectionChanged: (item) {
-    final worker = item.value as Worker;
+    final user = item.value as User;
   },
 )
 ```
@@ -91,22 +91,22 @@ SearchableDropdownPlus<WorkerCubit, WorkerState>(
 ### Multi-select
 
 ```dart
-MultiSelectDropdownPlus<WorkerCubit, WorkerState>(
-  cubit: context.read<WorkerCubit>(),
-  hintText: 'Select workers…',
-  onSearch: (query) => context.read<WorkerCubit>().search(query),
+MultiSelectDropdownPlus<UsersCubit, UsersState>(
+  cubit: context.read<UsersCubit>(),
+  hintText: 'Select users…',
+  onSearch: (query) => context.read<UsersCubit>().search(query),
   onStateChange: (state, updateList, updateLoading) {
-    if (state is WorkersLoaded) {
+    if (state is UsersLoaded) {
       updateList(
-        state.workers
-            .map((w) => DropdownItem(value: w, label: w.name))
+        state.users
+            .map((u) => DropdownItem(value: u, label: u.name))
             .toList(),
       );
       updateLoading(false);
     }
   },
   onSelectionChanged: (items) {
-    final workers = items.map((e) => e.value as Worker).toList();
+    final users = items.map((e) => e.value as User).toList();
   },
 )
 ```
@@ -119,32 +119,32 @@ Pass `items` and `isLoading` from your own state. Omit `onSearch` for local filt
 
 ```dart
 SearchableDropdown(
-  hintText: 'Search worker…',
-  items: workers,
-  isLoading: loadingWorkers,
-  selectedValue: selectedWorkerItem,
+  hintText: 'Select user…',
+  items: userItems,
+  isLoading: isLoading,
+  selectedValue: selectedUserItem,
   onSearch: (query) async {
-    setState(() => loadingWorkers = true);
-    final list = await api.searchWorkers(query);
+    setState(() => isLoading = true);
+    final list = await api.searchUsers(query);
     setState(() {
-      workers =
-          list.map((w) => DropdownItem(value: w, label: w.name)).toList();
-      loadingWorkers = false;
+      userItems =
+          list.map((u) => DropdownItem(value: u, label: u.name)).toList();
+      isLoading = false;
     });
   },
   onSelectionChanged: (item) =>
-      setState(() => selectedWorkerItem = item),
+      setState(() => selectedUserItem = item),
 )
 ```
 
 ```dart
 MultiSelectDropdown(
-  hintText: 'Select workers…',
-  items: workers,
-  isLoading: loadingWorkers,
-  selectedItems: selectedWorkerItems,
+  hintText: 'Select users…',
+  items: userItems,
+  isLoading: isLoading,
+  selectedItems: selectedUserItems,
   onSelectionChanged: (items) =>
-      setState(() => selectedWorkerItems = items),
+      setState(() => selectedUserItems = items),
 )
 ```
 
@@ -344,10 +344,10 @@ Or use a [controller](#controller) with the typed API.
 
 ```dart
 itemBuilder: (item, isSelected) {
-  final worker = item.value as Worker;
+  final user = item.value as User;
   return ListTile(
-    leading: CircleAvatar(child: Text(worker.name[0])),
-    title: Text(worker.name),
+    leading: CircleAvatar(child: Text(user.name[0])),
+    title: Text(user.name),
     trailing: isSelected ? const Icon(Icons.check) : null,
   );
 },
