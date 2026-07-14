@@ -36,14 +36,15 @@ import 'package:dropdown_plus_bloc/typed.dart';             // typed API + contr
 
 ## Screenshots
 
-### Single select
-<img src="doc/images/single_select.png" alt="Single select dropdown" width="280" />
+<p>
+  <img src="doc/images/single_select.gif" alt="Single select dropdown" width="240" />
+  &nbsp;
+  <img src="doc/images/multi_select.gif" alt="Multi select dropdown" width="240" />
+</p>
 
-### Multi select
-<img src="doc/images/multi_select.png" alt="Multi select dropdown" width="280" />
-
-### Form field
-<img src="doc/images/form_field.png" alt="Dropdown form field" width="280" />
+<p>
+  <img src="doc/images/form_field.gif" alt="Dropdown form field" width="240" />
+</p>
 
 ---
 
@@ -51,7 +52,7 @@ import 'package:dropdown_plus_bloc/typed.dart';             // typed API + contr
 
 ```yaml
 dependencies:
-  dropdown_plus_bloc: ^1.4.0
+  dropdown_plus_bloc: ^1.4.1
 ```
 
 ```bash
