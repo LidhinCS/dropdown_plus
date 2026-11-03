@@ -29,8 +29,21 @@ import 'package:dropdown_plus_bloc/typed.dart';             // typed API + contr
 - Form fields with validation
 - Search with optional debounce and offline cache fallback
 - Pagination via `onLoadMore` / `hasMore` / `isLoadingMore`
+- **Overlay menu** — floats over content (does not push the UI down)
+- Smooth open / close animation; inset selection & hover highlights
 - Theming presets + full `DropdownPlusTheme` overrides
 - Custom builders, controlled selection, accessibility (`Semantics`, `focusNode`)
+
+---
+
+## What's new in 1.5.0
+
+- Menu opens as an **overlay** anchored to the trigger (tap outside to dismiss; opens upward when space below is tight).
+- **Smoother** fade + slide animation (no layout resize jank).
+- Selection / hover highlight is **inset** from panel edges and row dividers.
+- Mouse-wheel scroll no longer leaves a stuck grey hover on a row.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full history.
 
 ---
 
@@ -52,7 +65,7 @@ import 'package:dropdown_plus_bloc/typed.dart';             // typed API + contr
 
 ```yaml
 dependencies:
-  dropdown_plus_bloc: ^1.4.1
+  dropdown_plus_bloc: ^1.5.0
 ```
 
 ```bash

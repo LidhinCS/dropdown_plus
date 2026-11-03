@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-11-03
+
+### Changed
+- **Overlay menu** — the dropdown panel floats over content instead of expanding the layout and pushing widgets below.
+- **Open / close animation** — fade + short slide on the overlay layer (replaces layout-resizing `AnimatedSize`).
+- **Item highlight** — selected / hover background is inset horizontally and vertically so it no longer sits flush against dividers or the panel edges.
+- **Mouse scroll hover** — grey hover highlight clears while scrolling with a mouse wheel / trackpad; selected state is unchanged.
+
+**No breaking API changes.**
+
 ## [1.4.1] - 2026-07-14
 
 ### Docs
