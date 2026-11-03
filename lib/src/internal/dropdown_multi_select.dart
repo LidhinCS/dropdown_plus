@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/dropdown_item.dart';
+import 'dropdown_item_button.dart';
 import 'dropdown_pagination.dart';
 import 'dropdown_theme_resolver.dart';
 
@@ -234,58 +235,55 @@ class _DropdownMultiSelectItemListState
     final divCol = widget.resolved.dividerColor;
     final showFooter = widget.isLoadingMore;
 
-    return ListView.builder(
-      controller: _scrollController,
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      itemCount: widget.items.length + (showFooter ? 1 : 0),
-      itemBuilder: (ctx, i) {
-        if (i >= widget.items.length) {
-          return DropdownLoadMoreFooter(isLoading: widget.isLoadingMore);
-        }
+    return DropdownHoverScope(
+      child: ListView.builder(
+        controller: _scrollController,
+        physics: const ClampingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        itemCount: widget.items.length + (showFooter ? 1 : 0),
+        itemBuilder: (ctx, i) {
+          if (i >= widget.items.length) {
+            return DropdownLoadMoreFooter(isLoading: widget.isLoadingMore);
+          }
 
-        final item = widget.items[i];
-        final isSelected = widget.isItemSelected(item);
+          final item = widget.items[i];
+          final isSelected = widget.isItemSelected(item);
+          final selectedColor = t.selectedItemBackgroundColor ??
+              cs.primaryContainer.withValues(alpha: 0.3);
 
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (i > 0) dropdownItemDivider(divCol, indent: 16),
-            Semantics(
-              button: true,
-              checked: isSelected,
-              label: item.label,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (i > 0) dropdownItemDivider(divCol, indent: 16),
+              Semantics(
+                button: true,
+                checked: isSelected,
+                label: item.label,
+                onTap: () => widget.onItemTap(item),
+                child: DropdownItemButton(
                   onTap: () => widget.onItemTap(item),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    padding: t.itemPadding ??
-                        const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? (t.selectedItemBackgroundColor ??
-                              cs.primaryContainer.withValues(alpha: 0.3))
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: DropdownMultiSelectItemRow(
-                      resolved: widget.resolved,
-                      item: item,
-                      isSelected: isSelected,
-                      itemBuilder: widget.itemBuilder,
-                    ),
+                  padding: t.itemPadding ??
+                      const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                  isSelected: isSelected,
+                  selectedColor: selectedColor,
+                  hoverColor: dropdownItemHoverColor(cs),
+                  child: DropdownMultiSelectItemRow(
+                    resolved: widget.resolved,
+                    item: item,
+                    isSelected: isSelected,
+                    itemBuilder: widget.itemBuilder,
                   ),
                 ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 }

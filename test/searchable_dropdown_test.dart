@@ -1,4 +1,6 @@
 import 'package:dropdown_plus_bloc/dropdown_plus_bloc.dart';
+import 'package:dropdown_plus_bloc/src/internal/dropdown_item_button.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -62,5 +64,93 @@ void main() {
 
     await tester.pump(const Duration(milliseconds: 120));
     expect(searchCalls, callsAfterOpen + 1);
+  });
+
+  testWidgets('menu overlays content instead of pushing it down', (tester) async {
+    final belowKey = GlobalKey();
+    final items = [
+      const DropdownItem<String>(value: 'a', label: 'Alice'),
+      const DropdownItem<String>(value: 'b', label: 'Bob'),
+    ];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Column(
+            children: [
+              SearchableDropdown(
+                hintText: 'Pick',
+                items: items,
+                isLoading: false,
+              ),
+              Container(key: belowKey, height: 24, color: const Color(0xFFE53935)),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final before = tester.getTopLeft(find.byKey(belowKey));
+
+    await tester.tap(find.text('Pick'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Alice'), findsOneWidget);
+    // The open trigger border is slightly thicker. The menu itself must not
+    // add its height to the layout below.
+    expect(
+      (tester.getTopLeft(find.byKey(belowKey)).dy - before.dy).abs(),
+      lessThan(8),
+    );
+
+    await tester.tapAt(const Offset(12, 560));
+    await tester.pumpAndSettle();
+    expect(find.text('Alice'), findsNothing);
+  });
+
+  testWidgets('mouse scroll clears the row hover highlight', (tester) async {
+    final items = List<DropdownItem<int>>.generate(
+      30,
+      (i) => DropdownItem<int>(value: i, label: 'Item $i'),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SearchableDropdown(
+            hintText: 'Pick',
+            items: items,
+            isLoading: false,
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Pick'));
+    await tester.pumpAndSettle();
+
+    final hover = dropdownItemHoverColor(
+      Theme.of(tester.element(find.text('Item 1'))).colorScheme,
+    );
+
+    bool rowHasHover() {
+      return tester.widgetList<Container>(find.byType(Container)).any((container) {
+        final decoration = container.decoration;
+        return decoration is BoxDecoration && decoration.color == hover;
+      });
+    }
+
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.addPointer();
+    addTearDown(gesture.removePointer);
+    await gesture.moveTo(tester.getCenter(find.text('Item 1')));
+    await tester.pump();
+
+    expect(rowHasHover(), isTrue);
+
+    await tester.drag(find.byType(ListView), const Offset(0, -240));
+    await tester.pump();
+
+    expect(rowHasHover(), isFalse);
   });
 }

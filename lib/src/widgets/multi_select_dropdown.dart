@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../internal/dropdown_internet.dart';
 import '../internal/dropdown_menu_controller.dart';
 import '../internal/dropdown_multi_select.dart';
+import '../internal/dropdown_overlay.dart';
 import '../internal/dropdown_panel.dart';
 import '../internal/dropdown_search_bar.dart';
 import '../internal/dropdown_states.dart';
@@ -280,65 +281,53 @@ class _MultiSelectDropdownState extends State<MultiSelectDropdown>
       themeStyle: widget.themeStyle,
     );
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final panelMax = resolveMultiSelectPanelMaxHeight(
-          constraints,
-          resolved.theme.menuMaxHeight,
-        );
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownTriggerButton(
-              resolved: resolved,
-              isOpen: _isOpen,
-              enabled: widget.enabled,
-              semanticsLabel: widget.semanticsLabel ?? widget.hintText,
-              focusNode: widget.focusNode,
-              width: widget.buttonWidth,
-              height: widget.buttonHeight,
-              showLoadingSpinner: widget.isLoading && widget.items.isEmpty,
-              onTap: _handleTriggerTap,
-              child: _buildTriggerContent(resolved),
-            ),
-            DropdownPanelShell(
-              resolved: resolved,
-              isOpen: _isOpen && widget.enabled,
-              maxHeight: panelMax,
-              expandBody: true,
-              children: [
-                DropdownSearchBar(
-                  resolved: resolved,
-                  controller: _searchController,
-                  debouncedSearch: _debouncedSearch,
-                  searchHint: widget.searchHint,
-                  enabled: widget.enabled,
-                  autofocus: widget.autofocusSearch,
-                  minSearchLength: widget.minSearchLength,
-                  onQueryChanged: _handleQueryChanged,
-                ),
-                Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: resolved.dividerColor,
-                ),
-                DropdownMultiSelectHeader(
-                  resolved: resolved,
-                  itemCount: _items.length,
-                  selectedCount: _selected.length,
-                  allSelected:
-                      _items.isNotEmpty && _selected.length == _items.length,
-                  onSelectAll: _selectAll,
-                  onClearAll: _clearAll,
-                  onClose: _closePanel,
-                ),
-                _buildResults(resolved),
-              ],
-            ),
-          ],
-        );
-      },
+    return DropdownOverlayHost(
+      isOpen: _isOpen && widget.enabled,
+      onDismiss: closeMenu,
+      menuMaxHeight: resolved.theme.menuMaxHeight,
+      trigger: DropdownTriggerButton(
+        resolved: resolved,
+        isOpen: _isOpen,
+        enabled: widget.enabled,
+        semanticsLabel: widget.semanticsLabel ?? widget.hintText,
+        focusNode: widget.focusNode,
+        width: widget.buttonWidth,
+        height: widget.buttonHeight,
+        showLoadingSpinner: widget.isLoading && widget.items.isEmpty,
+        onTap: _handleTriggerTap,
+        child: _buildTriggerContent(resolved),
+      ),
+      panel: DropdownPanelShell(
+        resolved: resolved,
+        expandBody: true,
+        children: [
+          DropdownSearchBar(
+            resolved: resolved,
+            controller: _searchController,
+            debouncedSearch: _debouncedSearch,
+            searchHint: widget.searchHint,
+            enabled: widget.enabled,
+            autofocus: widget.autofocusSearch,
+            minSearchLength: widget.minSearchLength,
+            onQueryChanged: _handleQueryChanged,
+          ),
+          Divider(
+            height: 1,
+            thickness: 1,
+            color: resolved.dividerColor,
+          ),
+          DropdownMultiSelectHeader(
+            resolved: resolved,
+            itemCount: _items.length,
+            selectedCount: _selected.length,
+            allSelected: _items.isNotEmpty && _selected.length == _items.length,
+            onSelectAll: _selectAll,
+            onClearAll: _clearAll,
+            onClose: _closePanel,
+          ),
+          _buildResults(resolved),
+        ],
+      ),
     );
   }
 

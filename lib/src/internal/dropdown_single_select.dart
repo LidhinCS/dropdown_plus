@@ -1,8 +1,13 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../models/dropdown_item.dart';
-import '../utils/debounced_callback.dart' show dropdownListMaxHeight;
+import '../utils/debounced_callback.dart'
+    show dropdownListMaxHeight, dropdownSearchHeaderHeight;
+import 'dropdown_item_button.dart';
 import 'dropdown_pagination.dart';
+import 'dropdown_panel.dart';
 import 'dropdown_theme_resolver.dart';
 
 class DropdownSingleSelectItemRow extends StatelessWidget {
@@ -114,7 +119,7 @@ class _DropdownSingleSelectItemListState
     final cs = widget.resolved.colorScheme;
     final divCol = widget.resolved.dividerColor;
     final showFooter = widget.isLoadingMore;
-    final maxH = dropdownListMaxHeight(t.menuMaxHeight);
+    final maxH = _listMaxHeight(t.menuMaxHeight);
     const estimatedRowHeight = 49.0;
     final contentHeight = widget.items.length * estimatedRowHeight +
         (showFooter ? 52.0 : 0.0);
@@ -122,58 +127,64 @@ class _DropdownSingleSelectItemListState
 
     return SizedBox(
       height: listHeight,
-      child: ListView.builder(
-        controller: _scrollController,
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        itemCount: widget.items.length + (showFooter ? 1 : 0),
-        itemBuilder: (ctx, i) {
-          if (i >= widget.items.length) {
-            return DropdownLoadMoreFooter(isLoading: widget.isLoadingMore);
-          }
+      child: DropdownHoverScope(
+        child: ListView.builder(
+          controller: _scrollController,
+          physics: const ClampingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          itemCount: widget.items.length + (showFooter ? 1 : 0),
+          itemBuilder: (ctx, i) {
+            if (i >= widget.items.length) {
+              return DropdownLoadMoreFooter(isLoading: widget.isLoadingMore);
+            }
 
-          final item = widget.items[i];
-          final isSelected = widget.isItemSelected(item);
+            final item = widget.items[i];
+            final isSelected = widget.isItemSelected(item);
+            final selectedColor = t.selectedItemBackgroundColor ??
+                cs.primaryContainer.withValues(alpha: 0.3);
 
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (i > 0) dropdownItemDivider(divCol),
-              Semantics(
-                button: true,
-                selected: isSelected,
-                label: item.label,
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (i > 0) dropdownItemDivider(divCol),
+                Semantics(
+                  button: true,
+                  selected: isSelected,
+                  label: item.label,
+                  onTap: () => widget.onItemTap(item),
+                  child: DropdownItemButton(
                     onTap: () => widget.onItemTap(item),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: t.itemPadding ??
-                          const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? (t.selectedItemBackgroundColor ??
-                                cs.primaryContainer.withValues(alpha: 0.3))
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: DropdownSingleSelectItemRow(
-                        resolved: widget.resolved,
-                        item: item,
-                        isSelected: isSelected,
-                        itemBuilder: widget.itemBuilder,
-                      ),
+                    padding: t.itemPadding ??
+                        const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                    isSelected: isSelected,
+                    selectedColor: selectedColor,
+                    hoverColor: dropdownItemHoverColor(cs),
+                    child: DropdownSingleSelectItemRow(
+                      resolved: widget.resolved,
+                      item: item,
+                      isSelected: isSelected,
+                      itemBuilder: widget.itemBuilder,
                     ),
                   ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
+  }
+
+  double _listMaxHeight(double menuMaxHeight) {
+    final overlayMax = DropdownMenuMetrics.maybeOf(context)?.maxHeight;
+    final cap = overlayMax == null
+        ? menuMaxHeight
+        : math.min(menuMaxHeight, overlayMax);
+    final available = cap - dropdownSearchHeaderHeight;
+    if (available <= 0) return 0;
+    return math.min(available, dropdownListMaxHeight(menuMaxHeight));
   }
 }

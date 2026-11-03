@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../internal/dropdown_internet.dart';
 import '../internal/dropdown_menu_controller.dart';
+import '../internal/dropdown_overlay.dart';
 import '../internal/dropdown_panel.dart';
 import '../internal/dropdown_search_bar.dart';
 import '../internal/dropdown_single_select.dart';
@@ -263,39 +264,37 @@ class _SearchableDropdownState extends State<SearchableDropdown>
       themeStyle: widget.themeStyle,
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        DropdownTriggerButton(
-          resolved: resolved,
-          isOpen: _isOpen,
-          enabled: widget.enabled,
-          semanticsLabel: widget.semanticsLabel ?? widget.hintText,
-          focusNode: widget.focusNode,
-          showLoadingSpinner: widget.isLoading && widget.items.isEmpty,
-          onTap: _handleTriggerTap,
-          child: _buildTriggerContent(resolved),
-        ),
-        DropdownPanelShell(
-          resolved: resolved,
-          isOpen: _isOpen && widget.enabled,
-          children: [
-            DropdownSearchBar(
-              resolved: resolved,
-              controller: _searchController,
-              debouncedSearch: _debouncedSearch,
-              searchHint: widget.searchHint,
-              enabled: widget.enabled,
-              autofocus: widget.autofocusSearch,
-              minSearchLength: widget.minSearchLength,
-              onQueryChanged: _handleQueryChanged,
-            ),
-            Divider(height: 1, thickness: 1, color: resolved.dividerColor),
-            _buildResults(resolved),
-          ],
-        ),
-      ],
+    return DropdownOverlayHost(
+      isOpen: _isOpen && widget.enabled,
+      onDismiss: closeMenu,
+      menuMaxHeight: resolved.theme.menuMaxHeight,
+      trigger: DropdownTriggerButton(
+        resolved: resolved,
+        isOpen: _isOpen,
+        enabled: widget.enabled,
+        semanticsLabel: widget.semanticsLabel ?? widget.hintText,
+        focusNode: widget.focusNode,
+        showLoadingSpinner: widget.isLoading && widget.items.isEmpty,
+        onTap: _handleTriggerTap,
+        child: _buildTriggerContent(resolved),
+      ),
+      panel: DropdownPanelShell(
+        resolved: resolved,
+        children: [
+          DropdownSearchBar(
+            resolved: resolved,
+            controller: _searchController,
+            debouncedSearch: _debouncedSearch,
+            searchHint: widget.searchHint,
+            enabled: widget.enabled,
+            autofocus: widget.autofocusSearch,
+            minSearchLength: widget.minSearchLength,
+            onQueryChanged: _handleQueryChanged,
+          ),
+          Divider(height: 1, thickness: 1, color: resolved.dividerColor),
+          _buildResults(resolved),
+        ],
+      ),
     );
   }
 
