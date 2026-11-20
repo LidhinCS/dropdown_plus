@@ -121,8 +121,8 @@ class _DropdownSingleSelectItemListState
     final showFooter = widget.isLoadingMore;
     final maxH = _listMaxHeight(t.menuMaxHeight);
     const estimatedRowHeight = 49.0;
-    final contentHeight = widget.items.length * estimatedRowHeight +
-        (showFooter ? 52.0 : 0.0);
+    final contentHeight =
+        widget.items.length * estimatedRowHeight + (showFooter ? 52.0 : 0.0);
     final listHeight = contentHeight.clamp(0.0, maxH);
 
     return SizedBox(

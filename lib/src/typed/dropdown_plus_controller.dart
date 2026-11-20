@@ -153,7 +153,8 @@ extension DropdownPlusControllerWiring<T> on DropdownPlusController<T> {
 }
 
 /// Typed-widget helpers for multi-controller wiring (same package).
-extension DropdownPlusMultiControllerWiring<T> on DropdownPlusMultiController<T> {
+extension DropdownPlusMultiControllerWiring<T>
+    on DropdownPlusMultiController<T> {
   void bindSelectionListener(void Function(List<T> values)? listener) =>
       setSelectionListener(listener);
 

@@ -66,7 +66,41 @@ void main() {
     expect(searchCalls, callsAfterOpen + 1);
   });
 
-  testWidgets('menu overlays content instead of pushing it down', (tester) async {
+  testWidgets('menu opens upward when trigger is near the bottom',
+      (tester) async {
+    final items = List<DropdownItem<int>>.generate(
+      12,
+      (i) => DropdownItem<int>(value: i, label: 'Item $i'),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: SearchableDropdown(
+                hintText: 'Pick',
+                items: items,
+                isLoading: false,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Pick'));
+    await tester.pumpAndSettle();
+
+    final triggerBottom = tester.getBottomLeft(find.text('Pick')).dy;
+    final firstItemTop = tester.getTopLeft(find.text('Item 0')).dy;
+    expect(firstItemTop, lessThan(triggerBottom));
+  });
+
+  testWidgets('menu overlays content instead of pushing it down',
+      (tester) async {
     final belowKey = GlobalKey();
     final items = [
       const DropdownItem<String>(value: 'a', label: 'Alice'),
@@ -83,7 +117,8 @@ void main() {
                 items: items,
                 isLoading: false,
               ),
-              Container(key: belowKey, height: 24, color: const Color(0xFFE53935)),
+              Container(
+                  key: belowKey, height: 24, color: const Color(0xFFE53935)),
             ],
           ),
         ),
@@ -134,7 +169,9 @@ void main() {
     );
 
     bool rowHasHover() {
-      return tester.widgetList<Container>(find.byType(Container)).any((container) {
+      return tester
+          .widgetList<Container>(find.byType(Container))
+          .any((container) {
         final decoration = container.decoration;
         return decoration is BoxDecoration && decoration.color == hover;
       });

@@ -23,7 +23,7 @@ class SearchableDropdownPlusFormField<C extends BlocBase<S>, S>
     ) onStateChange,
     required String hintText,
     super.key,
-    DropdownItem<dynamic>? initialValue,
+    super.initialValue,
     super.validator,
     super.onSaved,
     super.autovalidateMode,
@@ -47,7 +47,6 @@ class SearchableDropdownPlusFormField<C extends BlocBase<S>, S>
     String? semanticsLabel,
     int minSearchLength = 0,
   }) : super(
-          initialValue: initialValue,
           builder: (state) {
             return dropdownFormFieldDecoration(
               state: state,

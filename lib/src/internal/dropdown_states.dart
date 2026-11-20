@@ -46,8 +46,7 @@ class DropdownLoadingState extends StatelessWidget {
             height: 24,
             child: CircularProgressIndicator(
               strokeWidth: 2.5,
-              valueColor:
-                  AlwaysStoppedAnimation<Color>(resolved.loadingColor),
+              valueColor: AlwaysStoppedAnimation<Color>(resolved.loadingColor),
             ),
           ),
           if (loadingText?.isNotEmpty == true)

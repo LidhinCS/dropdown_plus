@@ -87,7 +87,8 @@ class TypedSearchableDropdown<T> extends StatefulWidget {
       _TypedSearchableDropdownState<T>();
 }
 
-class _TypedSearchableDropdownState<T> extends State<TypedSearchableDropdown<T>> {
+class _TypedSearchableDropdownState<T>
+    extends State<TypedSearchableDropdown<T>> {
   bool _seeded = false;
 
   @override

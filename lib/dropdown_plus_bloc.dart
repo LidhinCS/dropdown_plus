@@ -7,6 +7,7 @@
 /// - [MultiSelectDropdown]: same multi-select UI without BLoC (pass [items] / [isLoading]).
 /// - [SearchableDropdownFormField] / [MultiSelectDropdownFormField]: [FormField] wrappers.
 /// - [SearchableDropdownPlusFormField] / [MultiSelectDropdownPlusFormField]: BLoC form wrappers.
+/// - [CascadeDropdown]: nested / cascade single-select (no search or BLoC).
 ///
 /// ## Quick Start
 ///
@@ -52,11 +53,13 @@
 // ignore_for_file: directives_ordering
 library dropdown_plus;
 
+export 'src/models/cascade_menu_item.dart';
 export 'src/models/dropdown_item.dart';
 export 'src/models/dropdown_plus_theme.dart';
 export 'src/models/dropdown_plus_theme_style.dart';
 export 'src/internal/dropdown_states.dart'
     show DropdownEmptyBuilder, DropdownErrorBuilder, DropdownLoadingBuilder;
+export 'src/widgets/cascade_dropdown.dart';
 export 'src/widgets/multi_select_dropdown.dart';
 export 'src/widgets/multi_select_dropdown_form_field.dart';
 export 'src/widgets/multi_select_dropdown_plus.dart';

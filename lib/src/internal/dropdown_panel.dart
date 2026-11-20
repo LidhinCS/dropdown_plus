@@ -53,6 +53,11 @@ class DropdownPanelShell extends StatelessWidget {
           ]
         : children;
 
+    // Border is painted inside the box; inset the child so header+list
+    // never exceed [panelMax] by the 1px top/bottom stroke.
+    const borderWidth = 1.0;
+    final innerMax = math.max(0.0, panelMax - borderWidth * 2);
+
     return Material(
       elevation: t.menuElevation,
       shadowColor: Colors.black.withValues(alpha: 0.15),
@@ -63,14 +68,23 @@ class DropdownPanelShell extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(t.menuBorderRadius),
           border: Border.all(
+            width: borderWidth,
             color: t.menuBorderColor ?? cs.outline.withValues(alpha: 0.2),
           ),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(t.menuBorderRadius),
-          child: Column(
-            mainAxisSize: expandBody ? MainAxisSize.max : MainAxisSize.min,
-            children: columnChildren,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: innerMax),
+            // Re-publish the inner budget so lists size to content without
+            // overflowing the 1px top/bottom border.
+            child: DropdownMenuMetrics(
+              maxHeight: innerMax,
+              child: Column(
+                mainAxisSize: expandBody ? MainAxisSize.max : MainAxisSize.min,
+                children: columnChildren,
+              ),
+            ),
           ),
         ),
       ),

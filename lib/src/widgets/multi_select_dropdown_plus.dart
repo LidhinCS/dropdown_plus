@@ -51,8 +51,7 @@ import '../utils/debounced_callback.dart';
 ///       setState(() => _selected = items.map((e) => e.value).toList()),
 /// )
 /// ```
-class MultiSelectDropdownPlus<C extends BlocBase<S>, S>
-    extends StatefulWidget {
+class MultiSelectDropdownPlus<C extends BlocBase<S>, S> extends StatefulWidget {
   const MultiSelectDropdownPlus({
     required this.cubit,
     required this.onSearch,
@@ -176,8 +175,7 @@ class MultiSelectDropdownPlus<C extends BlocBase<S>, S>
 }
 
 class _MultiSelectDropdownPlusState<C extends BlocBase<S>, S>
-    extends State<MultiSelectDropdownPlus<C, S>>
-    implements DropdownMenuClient {
+    extends State<MultiSelectDropdownPlus<C, S>> implements DropdownMenuClient {
   List<DropdownItem<dynamic>> _items = [];
   List<DropdownItem<dynamic>> _cache = [];
   bool _isLoading = false;
@@ -435,8 +433,7 @@ class _MultiSelectDropdownPlusState<C extends BlocBase<S>, S>
         onLoadMore: widget.onLoadMore,
         hasMore: widget.hasMore,
         isLoadingMore: widget.isLoadingMore,
-        isItemSelected: (item) =>
-            _selected.any((s) => s.value == item.value),
+        isItemSelected: (item) => _selected.any((s) => s.value == item.value),
         onItemTap: _toggleItem,
       );
     }

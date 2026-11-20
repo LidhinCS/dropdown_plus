@@ -132,7 +132,8 @@ void main() {
     controller.dispose();
   });
 
-  testWidgets('multi controller select deselect clear setValues', (tester) async {
+  testWidgets('multi controller select deselect clear setValues',
+      (tester) async {
     final controller = DropdownPlusMultiController<TestUser>();
     List<TestUser> selected = [];
 

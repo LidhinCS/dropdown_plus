@@ -42,59 +42,59 @@ class DropdownTriggerButton extends StatelessWidget {
       child: GestureDetector(
         onTap: enabled ? onTap : null,
         child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 150),
-        opacity: enabled ? 1 : 0.5,
-        child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          width: width,
-          height: height,
-          padding: t.contentPadding ??
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: t.backgroundColor ?? Colors.white,
-            borderRadius: BorderRadius.circular(t.borderRadius),
-            border: Border.all(
-              color: effectiveOpen ? activeBorderCol : borderCol,
-              width: effectiveOpen ? t.activeBorderWidth : t.borderWidth,
+          opacity: enabled ? 1 : 0.5,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            width: width,
+            height: height,
+            padding: t.contentPadding ??
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: t.backgroundColor ?? Colors.white,
+              borderRadius: BorderRadius.circular(t.borderRadius),
+              border: Border.all(
+                color: effectiveOpen ? activeBorderCol : borderCol,
+                width: effectiveOpen ? t.activeBorderWidth : t.borderWidth,
+              ),
+              boxShadow: effectiveOpen
+                  ? [
+                      BoxShadow(
+                        color: activeBorderCol.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : [],
             ),
-            boxShadow: effectiveOpen
-                ? [
-                    BoxShadow(
-                      color: activeBorderCol.withValues(alpha: 0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+            child: Row(
+              children: [
+                Expanded(child: child),
+                if (showLoadingSpinner) ...[
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(loadCol),
                     ),
-                  ]
-                : [],
-          ),
-          child: Row(
-            children: [
-              Expanded(child: child),
-              if (showLoadingSpinner) ...[
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(loadCol),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                AnimatedRotation(
+                  turns: effectiveOpen ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: arrowCol,
+                    size: t.arrowIconSize,
                   ),
                 ),
-                const SizedBox(width: 8),
               ],
-              AnimatedRotation(
-                turns: effectiveOpen ? 0.5 : 0,
-                duration: const Duration(milliseconds: 200),
-                child: Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: arrowCol,
-                  size: t.arrowIconSize,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
-    ),
     );
 
     trigger = Semantics(

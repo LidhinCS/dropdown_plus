@@ -56,8 +56,7 @@ import '../utils/debounced_callback.dart';
 ///   ...
 /// )
 /// ```
-class SearchableDropdownPlus<C extends BlocBase<S>, S>
-    extends StatefulWidget {
+class SearchableDropdownPlus<C extends BlocBase<S>, S> extends StatefulWidget {
   const SearchableDropdownPlus({
     required this.cubit,
     required this.onSearch,
@@ -220,8 +219,7 @@ class SearchableDropdownPlus<C extends BlocBase<S>, S>
 }
 
 class _SearchableDropdownPlusState<C extends BlocBase<S>, S>
-    extends State<SearchableDropdownPlus<C, S>>
-    implements DropdownMenuClient {
+    extends State<SearchableDropdownPlus<C, S>> implements DropdownMenuClient {
   List<DropdownItem<dynamic>> _items = [];
   List<DropdownItem<dynamic>> _cache = [];
   bool _isLoading = false;

@@ -25,8 +25,7 @@ class DropdownResolvedTheme {
 
   Color arrowColor(bool isOpen) => isOpen
       ? activeBorderColor
-      : (theme.arrowIconColor ??
-          colorScheme.onSurface.withValues(alpha: 0.6));
+      : (theme.arrowIconColor ?? colorScheme.onSurface.withValues(alpha: 0.6));
 
   static DropdownResolvedTheme resolve(
     BuildContext context, {

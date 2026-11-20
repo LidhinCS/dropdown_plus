@@ -3,7 +3,7 @@
 [![pub package](https://img.shields.io/pub/v/dropdown_plus_bloc.svg)](https://pub.dev/packages/dropdown_plus_bloc)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Searchable single-select and multi-select Flutter dropdowns with optional **BLoC/Cubit** integration, theming, form fields, pagination, and an opt-in typed API.
+Searchable single-select and multi-select Flutter dropdowns with optional **BLoC/Cubit** integration, theming, form fields, pagination, cascade menus, and an opt-in typed API.
 
 | Widget | Description |
 |--------|-------------|
@@ -11,6 +11,7 @@ Searchable single-select and multi-select Flutter dropdowns with optional **BLoC
 | `MultiSelectDropdownPlus` | Multi-select with chips + BLoC/Cubit |
 | `SearchableDropdown` | Single-select without BLoC (`items` / `isLoading`) |
 | `MultiSelectDropdown` | Multi-select without BLoC |
+| `CascadeDropdown` | Nested / cascade single-select (web fly-out or mobile drill-down) |
 | `*FormField` | `Form` wrappers with `validator` / `onSaved` |
 | `Typed*` (opt-in) | Work with `User` (or any `T`) instead of `DropdownItem` |
 
@@ -30,18 +31,20 @@ import 'package:dropdown_plus_bloc/typed.dart';             // typed API + contr
 - Search with optional debounce and offline cache fallback
 - Pagination via `onLoadMore` / `hasMore` / `isLoadingMore`
 - **Overlay menu** — floats over content (does not push the UI down)
+- **CascadeDropdown** — nested menus (`view`: auto / web / mobile; lazy API children)
 - Smooth open / close animation; inset selection & hover highlights
 - Theming presets + full `DropdownPlusTheme` overrides
 - Custom builders, controlled selection, accessibility (`Semantics`, `focusNode`)
 
 ---
 
-## What's new in 1.5.0
+## What's new in 1.6.0
 
-- Menu opens as an **overlay** anchored to the trigger (tap outside to dismiss; opens upward when space below is tight).
-- **Smoother** fade + slide animation (no layout resize jank).
-- Selection / hover highlight is **inset** from panel edges and row dividers.
-- Mouse-wheel scroll no longer leaves a stuck grey hover on a row.
+- **`CascadeDropdown`** — hierarchical picker with `CascadeMenuItem` trees and optional `leading` icons.
+- **`view: CascadeView.auto | .web | .mobile`** — fly-out on desktop/web, drill-down on phones (or force either).
+- **Lazy submenus** — `hasChildren` + `onLoadChildren` (+ loading / error builders) for API-backed trees.
+- Path highlighting for open / selected ancestors; optional `showPathInTrigger`.
+- Example **Cascade** tab with style toggle and lazy-load demo.
 
 See [CHANGELOG.md](CHANGELOG.md) for the full history.
 
@@ -65,7 +68,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the full history.
 
 ```yaml
 dependencies:
-  dropdown_plus_bloc: ^1.5.0
+  dropdown_plus_bloc: ^1.6.0
 ```
 
 ```bash
@@ -158,6 +161,76 @@ MultiSelectDropdown(
   selectedItems: selectedUserItems,
   onSelectionChanged: (items) =>
       setState(() => selectedUserItems = items),
+)
+```
+
+---
+
+## Cascade / nested menu
+
+Standalone hierarchical picker — **no search, multi-select, or BLoC**. Leaves call `onChanged`.
+
+| `view` | Behavior |
+|--------|----------|
+| `CascadeView.auto` (default) | Fly-out when wide; drill-down when `width < flyoutBreakpoint` (default `600`) |
+| `CascadeView.web` | Side fly-out submenus (hover or tap) |
+| `CascadeView.mobile` | One panel with **Back** header |
+
+Also: path highlighting for open / selected ancestors; `showPathInTrigger` for `Parent › Child › Leaf`.
+
+```dart
+CascadeDropdown<String>(
+  hintText: 'Pick a region…',
+  value: selectedCode,
+  showPathInTrigger: true, // Europe › France
+  view: CascadeView.auto, // or .web / .mobile
+  items: const [
+    CascadeMenuItem(
+      label: 'Europe',
+      leading: Icon(Icons.public),
+      children: [
+        CascadeMenuItem(label: 'France', value: 'fr'),
+        CascadeMenuItem(label: 'Germany', value: 'de'),
+      ],
+    ),
+    CascadeMenuItem(
+      label: 'Asia',
+      children: [
+        CascadeMenuItem(label: 'Japan', value: 'jp'),
+      ],
+    ),
+  ],
+  onChanged: (code) => setState(() => selectedCode = code),
+)
+```
+
+### Lazy / API-loaded submenus
+
+Mark a branch with `hasChildren: true` and empty `children`, then supply `onLoadChildren`.
+Load the **root** list in your Cubit / `setState` and pass it as `items`.
+
+```dart
+CascadeDropdown<String>(
+  hintText: 'Pick a region…',
+  items: const [
+    CascadeMenuItem(label: 'Europe', value: 'eu', hasChildren: true),
+    CascadeMenuItem(label: 'Asia', value: 'as', hasChildren: true),
+  ],
+  onLoadChildren: (parent) async {
+    final rows = await api.fetchChildren(parent.value!);
+    return rows
+        .map(
+          (e) => CascadeMenuItem(
+            label: e.name,
+            value: e.id,
+            hasChildren: e.hasKids,
+          ),
+        )
+        .toList();
+  },
+  // childrenLoadingBuilder: (context, parent) => ...,
+  // childrenErrorBuilder: (context, parent, error, retry) => ...,
+  onChanged: (id) => setState(() => selectedCode = id),
 )
 ```
 
@@ -450,6 +523,25 @@ Same as single-select Plus, plus:
 | `selectedValue` / `selectedItems` | — | Controlled selection |
 | `onSelectionChanged` | — | Selection callback |
 | (+ multi extras & [common parameters](#common-parameters)) | | |
+
+### `CascadeDropdown<T>`
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `hintText` | ✅ | Placeholder |
+| `items` | ✅ | Root `CascadeMenuItem` tree |
+| `value` / `onChanged` | — | Controlled leaf selection |
+| `view` | — | `CascadeView.auto` / `.web` / `.mobile` |
+| `submenuMode` | — | Low-level override for `view` |
+| `flyoutBreakpoint` | — | Width cutoff for `auto` (default `600`) |
+| `showPathInTrigger` | — | Show `Parent › Child › Leaf` |
+| `onLoadChildren` | — | Lazy-load submenu when a branch opens |
+| `childrenLoadingBuilder` / `childrenErrorBuilder` | — | Lazy-load UI |
+| `selectedValueBuilder` | — | Custom closed trigger |
+| `submenuWidth` | — | Fly-out panel width |
+| `dropdownTheme` / `themeStyle` / `enabled` / `focusNode` | — | Shared chrome |
+
+`CascadeMenuItem`: `label`, optional `value`, `leading`, `children`, `hasChildren` (branch with empty children for API load).
 
 ### Typed parameter map
 

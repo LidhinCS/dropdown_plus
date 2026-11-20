@@ -107,7 +107,8 @@ void main() {
         _wrap(
           Form(
             key: formKey,
-            child: SearchableDropdownPlusFormField<FormUsersCubit, FormUsersState>(
+            child:
+                SearchableDropdownPlusFormField<FormUsersCubit, FormUsersState>(
               cubit: cubit,
               hintText: 'Pick user',
               onSearch: cubit.search,

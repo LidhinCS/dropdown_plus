@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-11-20
+
+### Added
+- **`CascadeDropdown<T>`** — standalone nested / cascade single-select (no search, multi-select, or BLoC).
+- **`CascadeMenuItem<T>`** — tree model with `label`, optional `value`, `leading`, `children`, and `hasChildren`.
+- **`CascadeView`** — presentation style via `view:`:
+  - `auto` (default) — fly-out when wide, drill-down when `width < flyoutBreakpoint` (default `600`)
+  - `web` — side fly-out submenus
+  - `mobile` — single-panel drill-down with a back header
+- Optional `submenuMode` (`auto` / `flyout` / `drillDown`) as a low-level override for `view`.
+- **Lazy / API submenus** — `hasChildren: true` + `onLoadChildren`; optional `childrenLoadingBuilder` and `childrenErrorBuilder` (with retry).
+- **Path highlighting** — open branch and selected-value ancestors stay emphasized in the menu.
+- Optional `showPathInTrigger` for `Parent › Child › Leaf` in the closed field.
+- Example app **Cascade** tab — style toggle (Auto / Web / Mobile), static tree, and lazy API demo.
+- Widget tests in `test/cascade_dropdown_test.dart`.
+
+**No breaking API changes.** Searchable / multi-select widgets are unchanged.
+
 ## [1.5.0] - 2026-11-03
 
 ### Changed

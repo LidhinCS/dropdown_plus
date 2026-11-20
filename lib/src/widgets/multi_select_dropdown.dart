@@ -378,8 +378,7 @@ class _MultiSelectDropdownState extends State<MultiSelectDropdown>
         onLoadMore: widget.onLoadMore,
         hasMore: widget.hasMore,
         isLoadingMore: widget.isLoadingMore,
-        isItemSelected: (item) =>
-            _selected.any((s) => s.value == item.value),
+        isItemSelected: (item) => _selected.any((s) => s.value == item.value),
         onItemTap: _toggleItem,
       );
     }

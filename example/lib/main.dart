@@ -42,6 +42,41 @@ List<DropdownItem<dynamic>> _usersToItems(List<User> users) => users
     .map((u) => DropdownItem<User>(value: u, label: _userLabel(u)))
     .toList();
 
+const List<CascadeMenuItem<String>> kCascadeRegions = [
+  CascadeMenuItem(
+    label: 'Europe',
+    leading: Icon(Icons.public_rounded),
+    children: [
+      CascadeMenuItem(label: 'France', value: 'fr'),
+      CascadeMenuItem(label: 'Germany', value: 'de'),
+      CascadeMenuItem(label: 'Spain', value: 'es'),
+    ],
+  ),
+  CascadeMenuItem(
+    label: 'Asia',
+    leading: Icon(Icons.travel_explore_rounded),
+    children: [
+      CascadeMenuItem(label: 'Japan', value: 'jp'),
+      CascadeMenuItem(label: 'India', value: 'in'),
+      CascadeMenuItem(
+        label: 'Southeast Asia',
+        children: [
+          CascadeMenuItem(label: 'Singapore', value: 'sg'),
+          CascadeMenuItem(label: 'Thailand', value: 'th'),
+        ],
+      ),
+    ],
+  ),
+  CascadeMenuItem(
+    label: 'Americas',
+    leading: Icon(Icons.south_america_rounded),
+    children: [
+      CascadeMenuItem(label: 'Canada', value: 'ca'),
+      CascadeMenuItem(label: 'Brazil', value: 'br'),
+    ],
+  ),
+];
+
 // ── Cubit ─────────────────────────────────────────────────────────────────────
 
 abstract class UsersState {}
@@ -315,6 +350,8 @@ class _ExamplePageState extends State<ExamplePage> {
   List<DropdownItem<dynamic>> _plainRemoteItems = _usersToItems(kDemoUsers);
   bool _plainRemoteLoading = false;
   List<DropdownItem<dynamic>> _plainRemoteSelected = [];
+  String? _cascadeSelected;
+  CascadeView _cascadeView = CascadeView.auto;
 
   @override
   void initState() {
@@ -454,7 +491,16 @@ class _ExamplePageState extends State<ExamplePage> {
                               setState(() => _plainRemoteSelected = items),
                           onPlainRemoteSearch: _plainRemoteSearch,
                         ),
-                      2 => _TypedTab(
+                      2 => _CascadeTab(
+                          key: const ValueKey('cascade'),
+                          selected: _cascadeSelected,
+                          view: _cascadeView,
+                          onChanged: (code) =>
+                              setState(() => _cascadeSelected = code),
+                          onViewChanged: (view) =>
+                              setState(() => _cascadeView = view),
+                        ),
+                      3 => _TypedTab(
                           key: const ValueKey('typed'),
                           typedCubit: _typedCubit,
                           typedSelected: _typedSelected,
@@ -493,6 +539,11 @@ class _ExamplePageState extends State<ExamplePage> {
             icon: Icon(Icons.widgets_outlined),
             selectedIcon: Icon(Icons.widgets_rounded),
             label: 'Standalone',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.account_tree_outlined),
+            selectedIcon: Icon(Icons.account_tree_rounded),
+            label: 'Cascade',
           ),
           NavigationDestination(
             icon: Icon(Icons.category_outlined),
@@ -867,6 +918,149 @@ class _StandaloneTab extends StatelessWidget {
                       '${plainRemoteSelected.map((e) => e.label).join(', ')}',
                 )
               : null,
+        ),
+      ],
+    );
+  }
+}
+
+class _CascadeTab extends StatelessWidget {
+  const _CascadeTab({
+    required this.selected,
+    required this.view,
+    required this.onChanged,
+    required this.onViewChanged,
+    super.key,
+  });
+
+  final String? selected;
+  final CascadeView view;
+  final ValueChanged<String> onChanged;
+  final ValueChanged<CascadeView> onViewChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final path = selected == null
+        ? null
+        : CascadeMenuItem.pathLabelsForValue(kCascadeRegions, selected!);
+    final viewLabel = switch (view) {
+      CascadeView.auto => 'Auto (width)',
+      CascadeView.web => 'Web fly-out',
+      CascadeView.mobile => 'Mobile drill-down',
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const _TabHeader(
+          title: 'Cascade menu',
+          description:
+              'Toggle the view style below. Web uses fly-out submenus; mobile '
+              'drills down in one panel with Back. Auto follows viewport width.',
+        ),
+        _DemoCard(
+          icon: Icons.tune_rounded,
+          title: 'Cascade style',
+          subtitle: 'Sets CascadeDropdown.view — currently $viewLabel.',
+          badge: 'view',
+          child: SegmentedButton<CascadeView>(
+            segments: const [
+              ButtonSegment(
+                value: CascadeView.auto,
+                label: Text('Auto'),
+                icon: Icon(Icons.auto_awesome_rounded, size: 18),
+              ),
+              ButtonSegment(
+                value: CascadeView.web,
+                label: Text('Web'),
+                icon: Icon(Icons.desktop_windows_rounded, size: 18),
+              ),
+              ButtonSegment(
+                value: CascadeView.mobile,
+                label: Text('Mobile'),
+                icon: Icon(Icons.smartphone_rounded, size: 18),
+              ),
+            ],
+            selected: {view},
+            onSelectionChanged: (next) {
+              if (next.isNotEmpty) onViewChanged(next.first);
+            },
+          ),
+        ),
+        _DemoCard(
+          icon: Icons.account_tree_rounded,
+          title: 'Region picker',
+          subtitle:
+              'Same dropdown; style follows the toggle above. Path shown in '
+              'the closed trigger.',
+          badge: 'New',
+          child: CascadeDropdown<String>(
+            hintText: 'Pick a region…',
+            items: kCascadeRegions,
+            value: selected,
+            view: view,
+            showPathInTrigger: true,
+            onChanged: onChanged,
+            dropdownTheme: _demoDropdownTheme(context),
+          ),
+          selection: selected != null && path != null
+              ? _SelectionChip(
+                  label: 'Selected: ${path.join(' › ')} ($selected)',
+                )
+              : null,
+        ),
+        _DemoCard(
+          icon: Icons.cloud_download_rounded,
+          title: 'Lazy API children',
+          subtitle:
+              'hasChildren + onLoadChildren — submenus load when a branch '
+              'opens (simulated delay).',
+          badge: 'API',
+          child: CascadeDropdown<String>(
+            hintText: 'Load regions…',
+            items: const [
+              CascadeMenuItem(
+                label: 'Europe',
+                value: 'eu',
+                leading: Icon(Icons.public_rounded),
+                hasChildren: true,
+              ),
+              CascadeMenuItem(
+                label: 'Asia',
+                value: 'as',
+                leading: Icon(Icons.travel_explore_rounded),
+                hasChildren: true,
+              ),
+            ],
+            value: selected,
+            view: view,
+            showPathInTrigger: true,
+            onLoadChildren: (parent) async {
+              await Future<void>.delayed(const Duration(milliseconds: 450));
+              return switch (parent.value) {
+                'eu' => const [
+                    CascadeMenuItem(label: 'France', value: 'fr'),
+                    CascadeMenuItem(label: 'Germany', value: 'de'),
+                    CascadeMenuItem(
+                      label: 'Nordics',
+                      value: 'nordics',
+                      hasChildren: true,
+                    ),
+                  ],
+                'as' => const [
+                    CascadeMenuItem(label: 'Japan', value: 'jp'),
+                    CascadeMenuItem(label: 'India', value: 'in'),
+                  ],
+                'nordics' => const [
+                    CascadeMenuItem(label: 'Sweden', value: 'se'),
+                    CascadeMenuItem(label: 'Norway', value: 'no'),
+                  ],
+                _ => const <CascadeMenuItem<String>>[],
+              };
+            },
+            onChanged: onChanged,
+            dropdownTheme: _demoDropdownTheme(context),
+          ),
         ),
       ],
     );

@@ -4,7 +4,35 @@ import 'package:flutter/material.dart';
 
 import 'dropdown_panel.dart';
 
-const double _menuGap = 6;
+const double dropdownMenuGap = 6;
+
+/// Prefer opening upward when the preferred panel height won't fit below.
+///
+/// [preferredHeight] is the estimated content height (falls back to
+/// [menuMaxHeight]). Opens down when it fits below; otherwise opens up when
+/// that side fits or simply has more room.
+bool dropdownShouldOpenUpward({
+  required double spaceBelow,
+  required double spaceAbove,
+  required double menuMaxHeight,
+  double? preferredHeight,
+}) {
+  final needed = math.min(preferredHeight ?? menuMaxHeight, menuMaxHeight);
+  if (spaceBelow >= needed) return false;
+  if (spaceAbove >= needed) return true;
+  return spaceAbove > spaceBelow;
+}
+
+/// Cap panel height to the available side; never expand past [menuMaxHeight].
+double dropdownPanelMaxHeight({
+  required double availableSpace,
+  required double menuMaxHeight,
+}) {
+  if (!availableSpace.isFinite || availableSpace <= 0) {
+    return math.min(80, menuMaxHeight);
+  }
+  return availableSpace.clamp(0.0, menuMaxHeight);
+}
 
 /// Places [panel] in an overlay anchored to [trigger], so opening the menu
 /// does not change the height of the surrounding layout.
@@ -78,18 +106,27 @@ class _DropdownOverlayHostState extends State<DropdownOverlayHost> {
 
     final origin = box.localToGlobal(Offset.zero);
     final media = MediaQuery.of(context);
+    // Reserve gap + panel border so the clamped height never paints past
+    // the safe viewport edge.
+    const edgeReserve = 2.0;
     final below = media.size.height -
         media.viewInsets.bottom -
         media.padding.bottom -
         origin.dy -
         box.size.height -
-        _menuGap;
-    final above = origin.dy - media.padding.top - _menuGap;
-    final openUp = below < math.min(widget.menuMaxHeight, 240) && above > below;
+        dropdownMenuGap -
+        edgeReserve;
+    final above = origin.dy - media.padding.top - dropdownMenuGap - edgeReserve;
+    final openUp = dropdownShouldOpenUpward(
+      spaceBelow: below,
+      spaceAbove: above,
+      menuMaxHeight: widget.menuMaxHeight,
+    );
     final space = openUp ? above : below;
-    final maxHeight = !space.isFinite || space <= 0
-        ? widget.menuMaxHeight
-        : math.min(space, widget.menuMaxHeight);
+    final maxHeight = dropdownPanelMaxHeight(
+      availableSpace: space,
+      menuMaxHeight: widget.menuMaxHeight,
+    );
     final width = box.size.width;
 
     final changed =
@@ -125,7 +162,7 @@ class _DropdownOverlayHostState extends State<DropdownOverlayHost> {
               targetAnchor: _openUp ? Alignment.topLeft : Alignment.bottomLeft,
               followerAnchor:
                   _openUp ? Alignment.bottomLeft : Alignment.topLeft,
-              offset: Offset(0, _openUp ? -_menuGap : _menuGap),
+              offset: Offset(0, _openUp ? -dropdownMenuGap : dropdownMenuGap),
               child: DropdownMenuMetrics(
                 maxHeight: _maxHeight,
                 child: _DropdownMenuMotion(

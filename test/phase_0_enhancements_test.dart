@@ -8,7 +8,7 @@ void main() {
   testWidgets('enabled false prevents opening panel', (tester) async {
     await tester.pumpWidget(
       _wrap(
-        SearchableDropdown(
+        const SearchableDropdown(
           hintText: 'Pick',
           items: [
             DropdownItem<String>(value: 'a', label: 'Alpha'),

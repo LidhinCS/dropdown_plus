@@ -16,7 +16,7 @@ class SearchableDropdownFormField extends FormField<DropdownItem<dynamic>?> {
     required List<DropdownItem<dynamic>> items,
     required bool isLoading,
     super.key,
-    DropdownItem<dynamic>? initialValue,
+    super.initialValue,
     super.validator,
     super.onSaved,
     super.autovalidateMode,
@@ -41,7 +41,6 @@ class SearchableDropdownFormField extends FormField<DropdownItem<dynamic>?> {
     String? semanticsLabel,
     int minSearchLength = 0,
   }) : super(
-          initialValue: initialValue,
           builder: (state) {
             return dropdownFormFieldDecoration(
               state: state,
