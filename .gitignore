@@ -5,6 +5,7 @@
 # Dart/Flutter generated
 .dart_tool/
 **/.dart_tool/
+build/
 
 # Editor / IDE
 .vscode/
