@@ -11,7 +11,7 @@
 /// ```dart
 /// import 'package:dropdown_plus_bloc/dropdown_plus_bloc.dart';
 /// ```
-library dropdown_plus_typed;
+library;
 
 export 'src/internal/dropdown_states.dart'
     show DropdownEmptyBuilder, DropdownErrorBuilder, DropdownLoadingBuilder;

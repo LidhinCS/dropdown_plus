@@ -1,6 +1,12 @@
 analyzer:
   exclude:
     - build/**
+  errors:
+    # `package:flutter/material.dart` is deprecated on Flutter 3.50+ in favor of
+    # `package:material_ui`. Migrating is a breaking change for consumers still
+    # on the in-SDK Material types; suppress until a dedicated major release.
+    deprecated_member_use: ignore
+
 include: package:flutter_lints/flutter.yaml
 
 linter:
@@ -12,3 +18,4 @@ linter:
     - use_super_parameters
     - prefer_final_fields
     - annotate_overrides
+    - unnecessary_library_name

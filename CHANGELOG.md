@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.6.0] - 2026-11-20
 
+### Fixed
+- Pub static analysis: removed unnecessary `library` names; suppress Flutter 3.50+ `flutter/material.dart` deprecation infos until a dedicated `material_ui` migration (breaking for older consumers).
+
 ### Added
 - **`CascadeDropdown<T>`** — standalone nested / cascade single-select (no search, multi-select, or BLoC).
 - **`CascadeMenuItem<T>`** — tree model with `label`, optional `value`, `leading`, `children`, and `hasChildren`.

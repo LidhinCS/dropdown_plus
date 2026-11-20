@@ -51,7 +51,7 @@
 /// );
 /// ```
 // ignore_for_file: directives_ordering
-library dropdown_plus;
+library;
 
 export 'src/models/cascade_menu_item.dart';
 export 'src/models/dropdown_item.dart';

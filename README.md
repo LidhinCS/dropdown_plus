@@ -60,6 +60,8 @@ See [CHANGELOG.md](CHANGELOG.md) for the full history.
 
 <p>
   <img src="doc/images/form_field.gif" alt="Dropdown form field" width="240" />
+  &nbsp;
+  <img src="doc/images/cascadeDropdown.gif" alt="Cascade dropdown" width="240" />
 </p>
 
 ---
